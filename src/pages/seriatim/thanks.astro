@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { DOWNLOAD_URL } from '../../lib/download';
+---
+<Base
+  title="Thanks — Chaos of Zen"
+  description="Thanks for supporting Seriatim. Your download starts automatically."
+>
+  <h1 data-testid="thanks-heading">Thank you</h1>
+
+  <p>
+    Your download should start in a moment. If it doesn't,
+    <a href={DOWNLOAD_URL} data-testid="thanks-download">download Seriatim directly</a>.
+  </p>
+
+  <p>Your receipt will arrive by email from Lemon Squeezy.</p>
+
+  <p><a href="/seriatim/manual">Installation guide</a></p>
+</Base>
+
+<script>
+  import { DOWNLOAD_URL } from '../../lib/download';
+
+  // Best-effort auto-start for the common case; the visible link above is
+  // the real fallback for a browser that blocks this navigation.
+  window.setTimeout(() => {
+    window.location.href = DOWNLOAD_URL;
+  }, 1200);
+</script>

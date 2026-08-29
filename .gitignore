@@ -28,3 +28,6 @@ playwright/.cache/
 
 # jetbrains setting folder
 .idea/
+
+# demo recording project (source project, not the exported media in public/media/)
+/assets/
