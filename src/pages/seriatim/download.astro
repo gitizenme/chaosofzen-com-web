@@ -1,0 +1,72 @@
+---
+import Base from '../../layouts/Base.astro';
+import VersionBadge from '../../components/VersionBadge.astro';
+import { SUGGESTED_PRICE_CENTS } from '../../lib/store';
+
+const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
+---
+<Base
+  title="Download Seriatim — Chaos of Zen"
+  description="Seriatim is a macOS VST3/AU generative instrument. Pay what you want, including nothing."
+>
+  <h1>Download Seriatim</h1>
+
+  <p>
+    Pay what you want. <strong>Zero is a real option</strong> — type 0, or leave
+    the box empty, and the download starts immediately. No email, no account.
+  </p>
+
+  <form data-testid="price-form" novalidate>
+    <label for="price">What's it worth to you?</label>
+    <div>
+      <span aria-hidden="true">$</span>
+      <input
+        id="price" name="price" data-testid="price-input"
+        type="text" inputmode="decimal" autocomplete="off"
+        value={suggested} aria-describedby="price-help price-error"
+      />
+    </div>
+    <p id="price-help">Suggested ${suggested}. Enter 0 to download free.</p>
+    <p id="price-error" data-testid="price-error" role="alert" hidden></p>
+
+    <button type="submit" data-testid="download-button">Download for macOS</button>
+  </form>
+
+  <VersionBadge />
+
+  <p><a href="/seriatim/manual">Installation guide</a> · <a href="/eula">Licence</a></p>
+</Base>
+
+<script>
+  import { parsePrice } from '../../lib/price';
+  import { checkoutUrl, SERIATIM_VARIANT_ID } from '../../lib/store';
+  import { DOWNLOAD_URL } from '../../lib/download';
+
+  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;
+  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]')!;
+  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]')!;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const result = parsePrice(input.value);
+
+    if (result.kind === 'invalid') {
+      error.textContent = result.reason;
+      error.hidden = false;
+      input.focus();
+      return;
+    }
+    error.hidden = true;
+
+    if (result.kind === 'free') {
+      // Straight to the file. No interstitial, no thank-you detour, no
+      // "consider donating" nag -- the person already answered that question.
+      window.location.href = DOWNLOAD_URL;
+      return;
+    }
+
+    window.location.href = checkoutUrl(SERIATIM_VARIANT_ID, {
+      customPriceCents: result.cents,
+    });
+  });
+</script>
