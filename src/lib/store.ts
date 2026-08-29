@@ -5,10 +5,7 @@
 // the store's test and live modes, so switching the store out of test mode
 // needs no code change here.
 export const LS_STORE_DOMAIN = 'store.chaosofzen.com';
-// PLACEHOLDER (2026-08-28): no Lemon Squeezy product exists yet. Replace with
-// the real variant UUID before Task 12's checkout rehearsal -- see Task 3
-// Step 3 in docs/superpowers/plans/2026-08-21-chaosofzen-com-web.md.
-export const SERIATIM_VARIANT_ID = '00000000-0000-4000-8000-000000000000';
+export const SERIATIM_VARIANT_ID = '5b43b542-660f-4a71-b961-36b672faa84d';
 
 // What the price field is pre-filled with. Not a floor -- 0 is accepted and
 // bypasses checkout entirely.
