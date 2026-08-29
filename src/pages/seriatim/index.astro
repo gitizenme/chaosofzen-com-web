@@ -1,0 +1,49 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Seriatim — a macOS generative instrument"
+  description="Seriatim is a macOS VST3/AU generative instrument that composes four-voice music that never repeats, for roughly 931 million events per voice."
+  ogImage="/media/seriatim-demo-poster.jpg"
+>
+  <h1>Seriatim</h1>
+  <p class="text-lg">
+    An instrument that composes four-voice music that never repeats — for
+    roughly 931 million events per voice before it does.
+  </p>
+
+  <video
+    controls
+    muted
+    playsinline
+    poster="/media/seriatim-demo-poster.jpg"
+    class="w-full rounded-brand"
+  >
+    <source src="/media/seriatim-demo.webm" type="video/webm" />
+    <source src="/media/seriatim-demo.mp4" type="video/mp4" />
+  </video>
+
+  <h2>The number that makes the point</h2>
+  <p>
+    Seriatim generates each voice from a twelve-tone row driven by six
+    coprime periods (576, 5, 7, 11, 13, 17, 19). Their least common
+    multiple — <strong>576 × 5 × 7 × 11 × 13 × 17 × 19 = 931,170,240</strong> —
+    is how many events pass before that voice's combined state repeats. At
+    any reasonable tempo, that's longer than a lifetime of continuous
+    listening.
+  </p>
+
+  <h2>What you get</h2>
+  <ul>
+    <li>VST3, AU, AU MIDI FX, and a standalone app</li>
+    <li>Universal binary — Apple silicon and Intel</li>
+    <li>Built-in 4-voice synthesis, or MIDI out on channels 1–4 or MPE</li>
+  </ul>
+
+  <h2>Requirements</h2>
+  <p>macOS 11.0 or later. Apple silicon or Intel.</p>
+
+  <p>
+    <a href="/seriatim/download" class="font-semibold text-accent">Download Seriatim</a>
+  </p>
+</Base>

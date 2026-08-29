@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const PAGES = ['/', '/seriatim/download', '/seriatim/thanks',
+const PAGES = ['/', '/seriatim', '/seriatim/download', '/seriatim/thanks',
                 '/seriatim/manual', '/seriatim/changelog', '/eula', '/privacy'];
 
 for (const path of PAGES) {
