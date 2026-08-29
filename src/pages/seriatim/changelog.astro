@@ -1,0 +1,27 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+
+const entries = await getCollection('changelog');
+entries.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+const rendered = await Promise.all(entries.map(e => render(e)));
+---
+<Base
+  title="Changelog — Seriatim"
+  description="Release history for Seriatim."
+>
+  <h1>Changelog</h1>
+  {entries.map((entry, i) => {
+    const { Content } = rendered[i];
+    const anchor = entry.id;
+    return (
+      <section>
+        <h2 id={anchor}>
+          {entry.data.version} — {entry.data.title}
+          <span> · {entry.data.date}</span>
+        </h2>
+        <Content />
+      </section>
+    );
+  })}
+</Base>

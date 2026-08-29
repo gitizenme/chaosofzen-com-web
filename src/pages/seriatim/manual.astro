@@ -1,0 +1,78 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Manual — Seriatim"
+  description="How to install, find, route and uninstall Seriatim."
+>
+  <h1>Manual</h1>
+
+  <h2 id="install">Install</h2>
+  <p>
+    Open the downloaded <code>.dmg</code>, run the <code>.pkg</code> installer
+    inside, and restart your host. The installer places files system-wide and
+    will ask for an administrator password once.
+  </p>
+
+  <h2 id="where-things-land">Where things land</h2>
+  <ul>
+    <li><code>/Library/Audio/Plug-Ins/Components/Seriatim.component</code></li>
+    <li><code>/Library/Audio/Plug-Ins/Components/Seriatim MIDI FX.component</code></li>
+    <li><code>/Library/Audio/Plug-Ins/VST3/Seriatim.vst3</code></li>
+    <li><code>/Applications/Seriatim.app</code></li>
+  </ul>
+
+  <h2 id="finding-it">Finding it in your host</h2>
+  <ul>
+    <li><strong>Live:</strong> Seriatim appears as an instrument (VST3 or AU) in the plug-in browser.</li>
+    <li><strong>Logic Pro:</strong> the instrument appears in the AU instrument list; <strong>Seriatim MIDI FX</strong> appears separately in the MIDI FX slot of any software-instrument track.</li>
+    <li><strong>Reaper:</strong> appears as both VST3 and AU under Seriatim / Chaos of Zen.</li>
+    <li><strong>Bitwig:</strong> appears as a VST3 instrument.</li>
+  </ul>
+
+  <h2 id="driving-four-instruments">Driving four instruments in Live</h2>
+  <p>
+    Live does not offer a way to filter an internal plugin's MIDI output by
+    channel — a track's <em>MIDI From</em> offers Pre FX / Post FX / a device,
+    with no per-channel filter. Rather than routing one instance four ways,
+    use one instance per voice and let the plugin do the splitting:
+  </p>
+  <ul>
+    <li>
+      Four plugin tracks, each with its own Seriatim <strong>VST3</strong> instance
+      (the AU's MIDI output is not offered as a routing source in Live).
+    </li>
+    <li>
+      Four instrument tracks, paired one-to-one with the plugin tracks. Set
+      each one's <em>MIDI From</em> to its partner plugin track's Seriatim
+      device, and <em>Monitor</em> to <strong>In</strong>.
+    </li>
+    <li>
+      On plugin track <em>n</em>, solo voice <em>n</em> (the per-voice
+      <strong>S</strong> toggle). Solo suppresses event emission, so a soloed
+      instance sends only that voice's notes.
+    </li>
+  </ul>
+  <p>
+    Give the four instances different seeds for four independent parts, or
+    leave the seeds equal for four voices of the same quartet split across
+    four instruments.
+  </p>
+
+  <h2 id="uninstall">Uninstall</h2>
+  <p>
+    Mount the dmg again and run <code>Uninstall Seriatim.sh</code>, next to
+    the pkg. Pass <code>--yes</code> to skip the confirmation prompt.
+  </p>
+  <p>
+    If you no longer have the dmg, remove these paths directly (the app and
+    plug-ins may also be user-level, under <code>~/Library/Audio/Plug-Ins</code>
+    instead of <code>/Library/Audio/Plug-Ins</code>):
+  </p>
+  <pre><code>sudo rm -rf "/Library/Audio/Plug-Ins/Components/Seriatim.component"
+sudo rm -rf "/Library/Audio/Plug-Ins/Components/Seriatim MIDI FX.component"
+sudo rm -rf "/Library/Audio/Plug-Ins/VST3/Seriatim.vst3"
+sudo rm -rf "/Applications/Seriatim.app"</code></pre>
+
+  <p><a href="/seriatim/changelog">Changelog</a> · <a href="/seriatim/download">Download</a></p>
+</Base>
