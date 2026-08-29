@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --color-canvas: #f7f5f2;
+  --color-canvas-raised: #ffffff;
+  --color-ink: #1a1a1a;
+  --color-ink-muted: #5c584f;
+  --color-accent: #b5451b;
+  --radius-brand: 0.375rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #16140f;
+    --color-canvas-raised: #211e17;
+    --color-ink: #f2ede4;
+    --color-ink-muted: #a89f8f;
+    --color-accent: #e07a4a;
+  }
+}
+
+@theme {
+  --color-canvas: var(--color-canvas);
+  --color-canvas-raised: var(--color-canvas-raised);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-accent: var(--color-accent);
+  --radius-brand: var(--radius-brand);
+}

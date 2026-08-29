@@ -1,10 +1,11 @@
 ---
+import Base from '../layouts/Base.astro';
 const buildStamp = new Date().toISOString();
 ---
-<html lang="en">
-  <head><meta charset="utf-8" /><title>Chaos of Zen</title></head>
-  <body>
-    <h1>Chaos of Zen</h1>
-    <p data-testid="build-stamp">{buildStamp}</p>
-  </body>
-</html>
+<Base
+  title="Chaos of Zen"
+  description="Chaos of Zen is a small studio making generative music software, starting with Seriatim."
+>
+  <h1>Chaos of Zen</h1>
+  <p data-testid="build-stamp">{buildStamp}</p>
+</Base>
