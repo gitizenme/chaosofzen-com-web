@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chaosofzen-com-web",
+  "compatibility_date": "2026-08-21",
+  // Build before uploading assets, so `wrangler versions upload` produces
+  // dist/ without needing a dashboard build command.
+  "build": {
+    "command": "pnpm build"
+  },
+  "assets": {
+    "directory": "./dist"
+  }
+}
