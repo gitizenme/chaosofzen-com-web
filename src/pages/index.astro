@@ -1,11 +1,29 @@
 ---
 import Base from '../layouts/Base.astro';
-const buildStamp = new Date().toISOString();
 ---
 <Base
   title="Chaos of Zen"
   description="Chaos of Zen is a small studio making generative music software, starting with Seriatim."
 >
   <h1>Chaos of Zen</h1>
-  <p data-testid="build-stamp">{buildStamp}</p>
+  <p>A small studio making software that makes music on its own terms.</p>
+
+  <div class="grid gap-6 sm:grid-cols-2">
+    <a
+      href="/seriatim"
+      class="block rounded-brand border border-ink/10 bg-canvas-raised p-6 hover:border-accent"
+    >
+      <h2>Seriatim</h2>
+      <p>A macOS generative instrument. Four voices, never repeating for roughly 931 million events.</p>
+    </a>
+
+    <a
+      href="https://chaosofzen.dev"
+      rel="noopener"
+      class="block rounded-brand border border-ink/10 bg-canvas-raised p-6 hover:border-accent"
+    >
+      <h2>365 Strange Attractors</h2>
+      <p>An art project, on its own site.</p>
+    </a>
+  </div>
 </Base>
