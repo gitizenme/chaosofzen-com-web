@@ -10,26 +10,13 @@ describe('checkoutUrl', () => {
     expect(checkoutUrl('abc-123', { embed: true })).toContain('embed=1');
   });
 
-  it('passes a custom price in cents', () => {
-    const url = new URL(checkoutUrl('abc-123', { customPriceCents: 1500 }));
-    expect(url.searchParams.get('checkout[custom_price]')).toBe('1500');
-  });
-
-  it('combines embed and custom price', () => {
-    const url = new URL(checkoutUrl('abc-123', { embed: true, customPriceCents: 700 }));
-    expect(url.searchParams.get('embed')).toBe('1');
-    expect(url.searchParams.get('checkout[custom_price]')).toBe('700');
-  });
-
-  it('rejects a zero or negative price rather than sending it to Lemon Squeezy', () => {
-    // The $0 path must never reach checkout. Throwing here turns a silent
-    // "free order" into a test failure at the boundary that owns the rule.
-    expect(() => checkoutUrl('abc-123', { customPriceCents: 0 })).toThrow();
-    expect(() => checkoutUrl('abc-123', { customPriceCents: -1 })).toThrow();
-  });
-
-  it('rejects a non-integer price', () => {
-    expect(() => checkoutUrl('abc-123', { customPriceCents: 12.5 })).toThrow();
+  it('never attaches a price -- Lemon Squeezy silently ignores checkout[custom_price] on a buy-link', () => {
+    // Confirmed live 2026-08-30: custom_price is a POST /v1/checkouts API
+    // attribute, not a buy-link query parameter. The product's own Pay What
+    // You Want pricing gives the customer an editable price field on
+    // Lemon Squeezy's own checkout page instead.
+    const url = new URL(checkoutUrl('abc-123'));
+    expect(url.search).toBe('');
   });
 
   it('exports a variant id that is not a placeholder', () => {

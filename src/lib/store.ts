@@ -13,21 +13,19 @@ export const SUGGESTED_PRICE_CENTS = 1200;
 
 export interface CheckoutOptions {
   embed?: boolean;
-  customPriceCents?: number;
 }
 
+// There is deliberately no way to pass a price here. `checkout[custom_price]`
+// is not a supported query parameter on a shareable buy-link -- Lemon
+// Squeezy silently ignores it (confirmed live, 2026-08-30) since custom_price
+// is documented only as a POST /v1/checkouts API attribute, which needs a
+// server holding a secret API key. The product's own Pay What You Want
+// pricing already gives the customer an editable "Suggest a price" field on
+// Lemon Squeezy's own checkout page, defaulting to SUGGESTED_PRICE_CENTS --
+// so the amount they typed on our page doesn't need to travel anywhere; they
+// just enter it again there.
 export function checkoutUrl(variantId: string, opts: CheckoutOptions = {}): string {
   const url = new URL(`https://${LS_STORE_DOMAIN}/checkout/buy/${variantId}`);
   if (opts.embed) url.searchParams.set('embed', '1');
-  if (opts.customPriceCents !== undefined) {
-    const cents = opts.customPriceCents;
-    if (!Number.isInteger(cents) || cents <= 0) {
-      // The $0 path is handled before this function is reached. Sending 0 to
-      // Lemon Squeezy would create a zero-value order, which is a different
-      // and much more confusing thing than a free download.
-      throw new RangeError(`customPriceCents must be a positive integer, got ${cents}`);
-    }
-    url.searchParams.set('checkout[custom_price]', String(cents));
-  }
   return url.toString();
 }

@@ -26,7 +26,7 @@ const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
         value={suggested} aria-describedby="price-help price-error"
       />
     </div>
-    <p id="price-help">Suggested ${suggested}. Enter 0 to download free.</p>
+    <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
     <p id="price-error" data-testid="price-error" role="alert" hidden></p>
 
     <button type="submit" data-testid="download-button">Download for macOS</button>
@@ -65,8 +65,10 @@ const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
       return;
     }
 
-    window.location.href = checkoutUrl(SERIATIM_VARIANT_ID, {
-      customPriceCents: result.cents,
-    });
+    // The amount typed here doesn't travel to Lemon Squeezy -- their own
+    // checkout page has its own editable price field for this product
+    // (Pay What You Want), defaulting to SUGGESTED_PRICE_CENTS. See the
+    // comment on checkoutUrl() for why.
+    window.location.href = checkoutUrl(SERIATIM_VARIANT_ID);
   });
 </script>
