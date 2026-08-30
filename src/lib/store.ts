@@ -5,7 +5,7 @@
 // the store's test and live modes, so switching the store out of test mode
 // needs no code change here.
 export const LS_STORE_DOMAIN = 'store.chaosofzen.com';
-export const SERIATIM_VARIANT_ID = '5b43b542-660f-4a71-b961-36b672faa84d';
+export const SERIATIM_VARIANT_ID = 'b6654c01-a0a8-473b-a260-bbb84d08b9ba';
 
 // What the price field is pre-filled with. Not a floor -- 0 is accepted and
 // bypasses checkout entirely.
