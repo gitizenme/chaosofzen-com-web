@@ -1,22 +1,41 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* The palette is taken out of the plugins rather than applied to them.
+   Every value below appears in the shipping source:
+
+     #e4572e #29b6a8 #f3a712 #a8c686  seriatim/plugin/Source/ScoreView.cpp:7
+     #0e0e14                          seriatim/plugin/Source/ScoreView.cpp:299
+     #1a1a22                          seriatim/plugin/Source/ControlPanel.h:76
+     #121214                          ekphrasis/plugin/Source/PluginEditor.cpp:22
+
+   The four voice colours are the only deliberately chosen set in either
+   codebase -- everything else was a JUCE default. Four colours, four voices. */
+
 :root {
-  --color-canvas: #f7f5f2;
+  --color-canvas: #f2f1f5;
   --color-canvas-raised: #ffffff;
-  --color-ink: #1a1a1a;
-  --color-ink-muted: #5c584f;
-  --color-accent: #b5451b;
+  --color-ink: #12121a;
+  --color-ink-muted: #5a5a6b;
+  /* Darkened teal, not the #29b6a8 used on dark grounds: that reads 2.24:1 here
+     and this is body-size link text. #17786e clears AA at 4.73:1. */
+  --color-accent: #17786e;
+
+  --color-voice-1: #e4572e; /* vermilion */
+  --color-voice-2: #29b6a8; /* teal      */
+  --color-voice-3: #f3a712; /* amber     */
+  --color-voice-4: #a8c686; /* sage      */
+
   --radius-brand: 0.375rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-canvas: #16140f;
-    --color-canvas-raised: #211e17;
-    --color-ink: #f2ede4;
-    --color-ink-muted: #a89f8f;
-    --color-accent: #e07a4a;
+    --color-canvas: #0e0e14;
+    --color-canvas-raised: #1a1a22;
+    --color-ink: #eceaf2;
+    --color-ink-muted: #8b8b9e;
+    --color-accent: #29b6a8;
   }
 }
 
@@ -26,5 +45,115 @@
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
   --color-accent: var(--color-accent);
+  --color-voice-1: var(--color-voice-1);
+  --color-voice-2: var(--color-voice-2);
+  --color-voice-3: var(--color-voice-3);
+  --color-voice-4: var(--color-voice-4);
   --radius-brand: var(--radius-brand);
+
+  /* Set by the fonts block in astro.config.mjs, which self-hosts them. */
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --font-mono: var(--font-code);
+}
+
+/* ---------------------------------------------------------------------------
+   Typography.
+
+   The pages are plain h1/h2/p/ul with no utility classes, so this styles the
+   elements directly rather than relying on `prose`. Only h1 and h2 are used
+   anywhere on the site, so the scale stays deliberately short.
+   --------------------------------------------------------------------------- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.0625rem;      /* 17px */
+    line-height: 1.65;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display), Iowan Old Style, Palatino, Georgia, serif;
+    font-weight: 300;
+    text-wrap: balance;
+    color: var(--color-ink);
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 7vw, 3.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.017em;
+    margin-block-end: 0.6em;
+  }
+
+  h2 {
+    font-size: clamp(1.4rem, 3.6vw, 1.85rem);
+    line-height: 1.2;
+    letter-spacing: -0.008em;
+    margin-block: 2em 0.5em;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-block: 1.6em 0.4em;
+  }
+
+  /* A heading immediately after another heading should not double its space. */
+  h1 + h2, h2 + h3 { margin-block-start: 0.8em; }
+
+  /* A heading that opens a container (a card, a section) has nothing above it
+     to be separated from, so it drops its leading space. */
+  h2:first-child, h3:first-child { margin-block-start: 0; }
+
+  /* Nor should the last element of a container push against its padding. */
+  p:last-child, ul:last-child, ol:last-child { margin-block-end: 0; }
+
+  p, ul, ol {
+    max-width: 68ch;
+    margin-block-end: 1.1em;
+  }
+
+  ul, ol { padding-inline-start: 1.25em; }
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+  li { margin-block-end: 0.35em; }
+  li::marker { color: var(--color-accent); }
+
+  /* The opening paragraph of a page carries the argument; give it room. */
+  h1 + p {
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--color-ink);
+  }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  code {
+    font-family: var(--font-code), ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.88em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Links in body copy are underlined, because colour alone is not an
+     affordance and the accent is not always adjacent to text that explains it.
+     Nav and footer opt out via their own utility classes. */
+  main a:not([class]) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: from-font;
+  }
+  main a:not([class]):hover { text-decoration-thickness: 2px; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
 }
