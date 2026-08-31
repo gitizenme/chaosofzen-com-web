@@ -1,0 +1,5 @@
+# chaosofzen.com used to 301 wholesale to chaosofzen.dev (the 365 Strange
+# Attractors art site). Now that the apex serves this studio site instead,
+# inbound links that expected the art site need somewhere to land.
+/attractors  https://chaosofzen.dev/  301
+/attractors/*  https://chaosofzen.dev/  301
