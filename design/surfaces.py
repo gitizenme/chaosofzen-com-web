@@ -110,8 +110,9 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--verify", action="store_true",
                     help="exit 1 if any surface or settled pairing fails")
-    ap.parse_args()
-    return verify()
+    args = ap.parse_args()
+    status = verify()          # always prints the table
+    return status if args.verify else 0   # bare invocation is a report, not a gate
 
 
 if __name__ == "__main__":
