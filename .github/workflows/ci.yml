@@ -1,10 +1,30 @@
 name: CI
 
+# Documentation and the design generator do not change what ships. `verify`
+# builds the site and runs the full Playwright suite including an axe sweep of
+# every page, which is not worth doing for a README edit.
+#
+# src/content/** is deliberately NOT ignored even though it is Markdown: the
+# changelog entries under it ARE site content, and skipping CI on them would
+# mean shipping unchecked pages.
+#
+# design/** holds the mark generator, which produces committed assets but does
+# not ship. A change there that also updates public/ triggers CI via public/.
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'design/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
   push:
     branches: [main]
+    paths-ignore:
+      - 'design/**'
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
