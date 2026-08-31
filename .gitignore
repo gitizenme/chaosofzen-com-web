@@ -34,3 +34,6 @@ playwright/.cache/
 
 # design/ is Python; header.py imports mark.py
 __pycache__/
+
+# subagent-driven-development scratch workspace
+.superpowers/
