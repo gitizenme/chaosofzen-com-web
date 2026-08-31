@@ -440,11 +440,31 @@ products divide.
 
 | Setting | Value | |
 |---|---|---|
+| Header | `design/store/header-1600.png` | 1600×300, the mark locked up with an outlined Literata 300 wordmark |
 | Logo | `design/store/logo-320.png` | Full-fidelity house mark. 2× the recommended 160 for retina; ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | `reduced_body()`, ink baked. 4 of 4 voices at 32 px |
 | Theme | **Vanilla** | The only neutral ground offered. Kiwi, Lime and Blueberry impose green, mint and purple card grounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent of §5.1 |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
+
+**The header is ground plus mark, because the system contains no wide object.**
+The Rössler x–y projection is bounded in a near-circular region however long it
+is integrated — `t_end` adds loops, not width. Fitting the orbit to a 16:3 box
+would be a non-uniform scale, which is a different curve rather than a
+parameter change, and §3's one-system property would not survive it. So the
+header is the mark at 196 px locked up with the wordmark, centred, on the same
+`#0e0e14`; the empty two thirds are the design and not a gap to fill.
+
+The wordmark is **outlined** per §6, so the header embeds no font and raises no
+licensing question. It is Literata instanced at **weight 300** — what
+`global.css` sets `h1`/`h2`/`h3` to — and HarfBuzz-shaped, so it carries the
+face's real kerning rather than naive advance widths.
+
+Crop survival is measured, not assumed, on the same reasoning as §4.5's
+containment check: ink that a crop removes is ink the viewer cannot see. The
+centred lockup spans 43% of the width and is intact down to a **2.5:1** centre
+crop; at 2:1 it keeps 84.6% and is clipped. Whether the storefront ever crops
+that hard is unknown, so the number is recorded rather than designed around.
 
 `#29b6a8` with `#12121a` text also clears AA, at 7.41:1, and is wrong anyway:
 it is the *dark*-ground accent and the Vanilla card is light. The platform's own

@@ -8,6 +8,7 @@ it. Nothing here ships to the browser; it generates what does.
 | [`mark.py`](mark.py) | The generator. Produces every mark from the equations. |
 | [`spec.md`](spec.md) | Why the system is the way it is, and what was rejected. |
 | [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. Needs Inkscape and Pillow; run by hand. |
+| [`header.py`](header.py) | The storefront header — the mark locked up with an outlined wordmark. Needs fontTools, uharfbuzz, Inkscape and Astro's downloaded Literata; run by hand. |
 
 ## The one rule
 
@@ -105,6 +106,7 @@ The values, and why each is what it is:
 
 | Setting | Value | |
 |---|---|---|
+| Header | `design/store/header-1600.png` | 1600×300. ~45 KB against a 10 MB cap |
 | Logo | `design/store/logo-320.png` | 2× the recommended 160, for retina. ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | ~1.7 KB |
 | Theme | **Vanilla** | The only neutral ground on offer. Kiwi, Lime and Blueberry impose green, mint and purple card backgrounds that collide with the voice palette |
@@ -115,7 +117,20 @@ The storefront crops the logo to a **circle**, which is why the mark is measured
 for circular containment (`measure_icon.py --circle`) rather than against the
 macOS rounded rect: 0.0% escaped, furthest ink at 86% of the radius.
 
-Both store assets bake their own ground. Everything in `public/` is built to
+The header is **ground plus mark**, not a wide mark. The Rossler x–y projection
+is bounded in a near-circular region however long you integrate — `t_end` adds
+loops, not width — so the system contains no wide object to scale into a 16:3
+letterbox, and fitting the orbit to a wide box would be a non-uniform scale,
+which is a different curve rather than a parameter change. The empty two thirds
+are the design. Its wordmark is **outlined**, per the typography section below,
+so the header PNG embeds no font.
+
+The lockup is centred and measured against the centre-crops a wide banner gets
+(`header.py --measure`): intact down to **2.5:1**, and clipped at 2:1, where it
+keeps 84.6%. If the storefront turns out to crop harder than 2.5:1 on narrow
+viewports, the fix is a smaller lockup, not a rearranged one.
+
+All three store assets bake their own ground. Everything in `public/` is built to
 inherit one — `favicon.svg` emits `currentColor`, the raster icons are
 transparent — and an inherited ground is an invisible mark on a light card we
 do not control.
