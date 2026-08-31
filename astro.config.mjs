@@ -18,7 +18,7 @@ export default defineConfig({
   fonts: [
     {
       provider: fontProviders.google(),
-      name: 'Newsreader',
+      name: 'Literata',
       cssVariable: '--font-display',
       weights: [300, 400],
       subsets: ['latin'],
@@ -26,7 +26,7 @@ export default defineConfig({
     },
     {
       provider: fontProviders.google(),
-      name: 'IBM Plex Sans',
+      name: 'Source Sans 3',
       cssVariable: '--font-body',
       weights: [400, 600],
       styles: ['normal', 'italic'],   // the manual uses <em>
