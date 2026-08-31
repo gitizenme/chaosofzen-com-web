@@ -3,7 +3,7 @@
 **Status:** Applied to this site and deployed. Plugin application not built.
 **Date:** 2026-08-30
 **Scope:** The Chaos of Zen house mark, the Ekphrasis and Seriatim product
-marks, and the applied theme.
+marks, the applied theme, and the Lemon Squeezy storefront (§7.4).
 
 > This document is the *reasoning*. `design/mark.py` is the *implementation*,
 > and it reproduces every committed asset byte-for-byte — run
@@ -178,6 +178,15 @@ Implementation note: colour varies per drawn polygon, so runs are chopped into
 short chunks **only inside the transition zone** — long runs elsewhere keep the
 path count down. The published favicon quantises this to five flat colours, which
 takes it from 33 KB to 4.7 KB.
+
+> **That quantisation is also a legibility mechanism, and was credited only as
+> compression for two revisions of this document.** Measured at 32 px, the same
+> geometry without the snap retains three voices of four with amber at **zero**
+> pixels; with it, four of four. It is §4.5's finding — a voice's ink half and
+> its pigment half averaging into a midtone that classifies as neither — met
+> with the only remedy available to a mark that cannot drop its feather, since
+> feathering through all four voices is what the house mark *is*. Nothing that
+> renders below roughly 64 px may take the unquantised ramp.
 
 ### 4.3 The three marks
 
@@ -402,6 +411,46 @@ should not be folded into it.
 Same treatment, plus its mark. Ground `#0e0e14`, panel `#1a1a22`. `ScoreView`
 already uses the voice palette and needs no colour change.
 
+### 7.4 Storefront — shipped
+
+`store.chaosofzen.com` is a Lemon Squeezy storefront. Its appearance is five
+settings in someone else's admin panel, so the design question is not what to
+draw but **what survives leaving our control**.
+
+Two things change relative to everything in `public/`:
+
+1. **The ground is baked in.** `favicon.svg` emits its ink as `currentColor` and
+   the raster icons are transparent with `#eceaf2` ink; both are built to
+   inherit a ground the page supplies. The storefront's card is a light one we
+   do not theme, so an inherited ground is an invisible mark. The store assets
+   carry `#0e0e14` themselves.
+2. **Containment is a question about a circle.** The storefront crops the logo
+   round, not to §4.5's macOS rounded rect. Same defect class, different shape,
+   so it gets the same measurement rather than an assumption:
+   `measure_icon.py --circle` reports **0.0% escaped**, furthest ink at 86% of
+   the radius. `measure_icon.py` now reads the ground rect off the asset instead
+   of assuming the macOS grid — measuring a full-bleed ground against that
+   constant reported a 3.1% escape for ink sitting comfortably on its own
+   ground, which is BUG-5's failure mode running backwards.
+
+The mark is the **house mark**, not a product's: the avatar identifies the
+merchant on the store page, at checkout and on every receipt, and the store
+sells Seriatim now and Ekphrasis later. §4.3 — the studio holds what the
+products divide.
+
+| Setting | Value | |
+|---|---|---|
+| Logo | `design/store/logo-320.png` | Full-fidelity house mark. 2× the recommended 160 for retina; ~50 KB against a 1 MB cap |
+| Favicon | `design/store/favicon-32.png` | `reduced_body()`, ink baked. 4 of 4 voices at 32 px |
+| Theme | **Vanilla** | The only neutral ground offered. Kiwi, Lime and Blueberry impose green, mint and purple card grounds that collide with the voice palette |
+| Button | `#17786e` | The light-ground accent of §5.1 |
+| Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
+
+`#29b6a8` with `#12121a` text also clears AA, at 7.41:1, and is wrong anyway:
+it is the *dark*-ground accent and the Vanilla card is light. The platform's own
+default button purple is declined on §3.1's grounds — it is a starter default,
+which is the same objection that removed the warm paper palette.
+
 ---
 
 ## 8. Verification
@@ -438,9 +487,12 @@ appearing to be matters of taste.
    parameter; the feather was the right one, and fitting to the ground rect
    rather than to the canvas was a second one nobody had asked about. See §4.5.
    No dedicated icon-only construction was needed and §3's one-system property
-   is intact. What remains open is the crossover: the full mark is used from
-   128 px up on the assertion that it reads there, and that assertion has not
-   been through §4.1's measurement.
+   is intact. **Partly resolved further 2026-08-31** by §7.4, which had to pick
+   a construction at two sizes and measured both: the full mark scores 4 of 4
+   at 320 px and **2 of 4 at 32 px**, where the reduced-and-quantised body
+   scores 4 of 4. So the crossover is somewhere between, and the two endpoints
+   are now measured rather than asserted. 64 px and 128 px — the sizes the
+   claim actually rests on — remain unmeasured.
 3. **Sequencing against the host smoke test.** `docs/superpowers/checklists/host-smoke-test.md`
    is an unpassed release gate, and the README records that a sibling project
    shipped the same class of unit-display bug three times because only a real host
