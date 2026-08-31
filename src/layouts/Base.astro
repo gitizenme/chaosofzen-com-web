@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { Font } from 'astro:assets';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 
@@ -19,11 +20,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://chaosofzen.
     <meta property="og:image" content={new URL(ogImage, canonical).href} />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    {/* Preload only the two faces that paint first -- body regular and the
+        display weight used by every heading. The other weights, and the italic
+        the manual needs, are fetched lazily by the browser only where a glyph
+        actually uses them. */}
+    <Font cssVariable="--font-body" preload={[{ weight: 400, style: 'normal' }]} />
+    <Font cssVariable="--font-display" preload={[{ weight: 300, style: 'normal' }]} />
+    <Font cssVariable="--font-code" />
   </head>
   <body class="bg-canvas text-ink antialiased">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:p-4">Skip to content</a>
     <Nav />
-    <main id="main"><slot /></main>
+    <main id="main" class="mx-auto w-full max-w-3xl px-6 pb-16 pt-10 md:pt-14"><slot /></main>
     <Footer />
   </body>
 </html>
