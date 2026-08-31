@@ -41,6 +41,7 @@ Standard library only. No dependencies.
 | `public/marks/seriatim-icon.svg` | The same four voices reduced for bundle icons — one loop, solid colours, on a dark rounded rect. The feather is dropped and the orbit is fitted to the ground: see BUG-4 and BUG-5 |
 | `design/store/logo.svg` | The merchant avatar for the Lemon Squeezy storefront — the full house mark on an opaque full-bleed `#0e0e14`, ink baked rather than `currentColor` |
 | `design/store/favicon.svg` | The storefront tab icon — `reduced_body()` with baked ink and the same opaque ground |
+| `design/store/product-seriatim.svg` | Seriatim's storefront thumbnail, the four-voice mark on the opaque store ground. The one store asset that takes a product mark rather than the house mark. |
 
 Every mark is the same orbit drawn by the same brush. What separates them is
 **what drives the chaos** — so they are siblings by construction, not by styling.
@@ -61,6 +62,7 @@ than Python:
   cd design/store
   inkscape logo.svg    -w 320 -h 320 --export-filename=logo-320.png
   inkscape favicon.svg -w  32 -h  32 --export-filename=favicon-32.png
+  inkscape product-seriatim.svg -w 1024 -h 1024 --export-filename=product-seriatim-1024.png
   ```
 
 - **The social card** (`public/og/default.png`) — rendered in a browser served
@@ -109,6 +111,7 @@ The values, and why each is what it is:
 | Header | `design/store/header-1600.png` | 1600×300. ~45 KB against a 10 MB cap |
 | Logo | `design/store/logo-320.png` | 2× the recommended 160, for retina. ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | ~1.7 KB |
+| Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark |
 | Theme | **Vanilla** | The only neutral ground on offer. Kiwi, Lime and Blueberry impose green, mint and purple card backgrounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent. Not `#29b6a8`, for the reason directly above this section |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |

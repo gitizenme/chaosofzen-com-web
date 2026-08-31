@@ -522,6 +522,22 @@ def store_favicon_svg() -> str:
     return _svg(STORE_GROUND + reduced_body(INK_ON_DARK), "Chaos of Zen")
 
 
+def store_product_svg() -> str:
+    """Seriatim's product thumbnail for the storefront.
+
+    seriatim_mark() unmodified on the store ground. It is grounded for the same
+    reason the logo is: section 5.1 records sage (#a8c686) as the one voice
+    colour that does not carry onto light, so a transparent thumbnail loses a
+    voice on the storefront's light card -- the exact failure the grounded
+    constructions exist to prevent.
+
+    This is the one store asset that takes a PRODUCT mark rather than the house
+    mark. The avatar identifies the merchant; a thumbnail identifies the thing
+    being bought.
+    """
+    return _svg(STORE_GROUND + seriatim_mark(), "Seriatim")
+
+
 ASSETS = {
     "public/favicon.svg": favicon_svg,
     "public/marks/chaos-of-zen.svg": house_mark_svg,
@@ -530,6 +546,7 @@ ASSETS = {
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
     "design/store/logo.svg": store_logo_svg,
     "design/store/favicon.svg": store_favicon_svg,
+    "design/store/product-seriatim.svg": store_product_svg,
 }
 
 
