@@ -9,6 +9,7 @@ it. Nothing here ships to the browser; it generates what does.
 | [`spec.md`](spec.md) | Why the system is the way it is, and what was rejected. |
 | [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. Needs Inkscape and Pillow; run by hand. |
 | [`header.py`](header.py) | The storefront header — the mark locked up with an outlined wordmark. Needs fontTools, uharfbuzz, Inkscape and Astro's downloaded Literata; run by hand. |
+| [`surfaces.py`](surfaces.py) | Records each storefront surface's ground and accent, and checks every pairing clears WCAG AA. Standard library only; run by hand. |
 
 ## The one rule
 
@@ -25,9 +26,11 @@ python3 design/surfaces.py --verify   # does every storefront surface clear AA?
 python3 design/mark.py --write        # regenerate them
 ```
 
-Both `--verify` commands exit non-zero on a mismatch, so they work in CI. `mark.py --verify`
-verifies that every committed asset matches the generator byte-for-byte — that is what makes
-this a source of truth rather than a copy of one.
+Both `--verify` commands exit non-zero on a mismatch. CI ignores `design/**` on
+every push and pull request, so neither runs automatically anywhere — `design/`
+is verified locally, by design. `mark.py --verify` checks that every committed
+asset matches the generator byte-for-byte — that is what makes this a source of
+truth rather than a copy of one.
 
 Standard library only. No dependencies.
 
@@ -49,15 +52,15 @@ Every mark is the same orbit drawn by the same brush. What separates them is
 
 ## What it does *not* generate
 
-Two asset groups are committed as binaries because reproducing them needs more
+Three asset groups are committed as binaries because reproducing them needs more
 than Python:
 
 - **Raster icons** (`favicon.ico`, `icon-*.png`, `apple-touch-icon.png`) —
   rasterised from the mark. Regenerating needs a renderer; the ICO is a
   hand-assembled container around 16/32/48 PNG payloads, valid since Vista.
-- **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`) —
-  what actually gets uploaded, since the storefront takes PNG. Rasterised from
-  the two SVGs above with Inkscape:
+- **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`,
+  `design/store/product-seriatim-1024.png`) — what actually gets uploaded, since
+  the storefront takes PNG. Rasterised from the three SVGs above with Inkscape:
 
   ```sh
   cd design/store
@@ -112,7 +115,7 @@ The values, and why each is what it is:
 | Header | `design/store/header-1600.png` | 1600×300. ~45 KB against a 10 MB cap |
 | Logo | `design/store/logo-320.png` | 2× the recommended 160, for retina. ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | ~1.7 KB |
-| Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark |
+| Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark. 1024×1024 is assumed — no dashboard access to confirm the cap |
 | Theme | **Vanilla** | The only neutral ground on offer. Kiwi, Lime and Blueberry impose green, mint and purple card backgrounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent. Not `#29b6a8`, for the reason directly above this section |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
@@ -141,7 +144,7 @@ The lockup is centred and measured against the centre-crops a wide banner gets
 keeps 84.6%. If the storefront turns out to crop harder than 2.5:1 on narrow
 viewports, the fix is a smaller lockup, not a rearranged one.
 
-All three store assets bake their own ground. Everything in `public/` is built to
+All four store assets bake their own ground. Everything in `public/` is built to
 inherit one — `favicon.svg` emits `currentColor`, the raster icons are
 transparent — and an inherited ground is an invisible mark on a light card we
 do not control.

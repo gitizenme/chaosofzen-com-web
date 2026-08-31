@@ -413,7 +413,7 @@ already uses the voice palette and needs no colour change.
 
 ### 7.4 Storefront — shipped
 
-`store.chaosofzen.com` is a Lemon Squeezy storefront. Its appearance is five
+`store.chaosofzen.com` is a Lemon Squeezy storefront. Its appearance is six
 settings in someone else's admin panel, so the design question is not what to
 draw but **what survives leaving our control**.
 
@@ -433,16 +433,19 @@ Two things change relative to everything in `public/`:
    constant reported a 3.1% escape for ink sitting comfortably on its own
    ground, which is BUG-5's failure mode running backwards.
 
-The mark is the **house mark**, not a product's: the avatar identifies the
-merchant on the store page, at checkout and on every receipt, and the store
-sells Seriatim now and Ekphrasis later. §4.3 — the studio holds what the
-products divide.
+The avatar is the **house mark**, not a product's: it identifies the merchant
+on the store page, at checkout and on every receipt, and the store sells
+Seriatim now and Ekphrasis later. §4.3 — the studio holds what the products
+divide. The product thumbnail is the deliberate exception, below: it takes
+Seriatim's own mark, because a thumbnail identifies the thing being bought,
+not the merchant selling it.
 
 | Setting | Value | |
 |---|---|---|
 | Header | `design/store/header-1600.png` | 1600×300, the mark locked up with an outlined Literata 300 wordmark |
 | Logo | `design/store/logo-320.png` | Full-fidelity house mark. 2× the recommended 160 for retina; ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | `reduced_body()`, ink baked. 4 of 4 voices at 32 px |
+| Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark — the exception above. 1024×1024 is assumed, not read from the dashboard |
 | Theme | **Vanilla** | The only neutral ground offered. Kiwi, Lime and Blueberry impose green, mint and purple card grounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent of §5.1 |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
@@ -455,10 +458,12 @@ spans surfaces that may not share a ground — and the wrong half of the pair is
 a measured failure, not a near miss: `#17786e` on `#0e0e14` is 3.62:1 and
 `#ffffff` on `#29b6a8` is 2.51:1.
 
-All five are therefore set light, matching the Vanilla theme and the website's
-default. `design/surfaces.py` records that and recomputes every ratio on
-`--verify`, carrying the rejected pairings alongside the accepted ones so a
-regression in the contrast maths cannot pass silently.
+All five are therefore set light, matching the Vanilla theme and the
+website's default — the value to enter, not a read of the dashboard, which is
+the live authority and which this file cannot observe. `design/surfaces.py`
+records that decision and recomputes every ratio on `--verify`, carrying the
+rejected pairings alongside the accepted ones so a regression in the contrast
+maths cannot pass silently.
 
 **The header is ground plus mark, because the system contains no wide object.**
 The Rössler x–y projection is bounded in a near-circular region however long it

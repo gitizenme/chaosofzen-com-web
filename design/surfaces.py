@@ -41,7 +41,8 @@ class Surface(NamedTuple):
     button_text: str   # text on that fill
 
 
-# All five are set light, matching the Vanilla theme and the website's default.
+# All five are set light below -- the value to enter, not a read of the
+# dashboard, which is the live authority and which this file cannot observe.
 # A surface switched to a dark ground must ALSO switch to ACCENT_ON_DARK, with
 # INK_ON_LIGHT on the button; --verify rejects it otherwise.
 SURFACES = [
@@ -99,7 +100,7 @@ def verify() -> int:
     for s in SURFACES:
         a, b = ratio(s.accent, s.ground), ratio(s.button_text, s.button)
         flag = "" if min(a, b) >= AA else "   <- FAILS AA"
-        print(f"{s.name:18s} {a:>13.2f}: {b:>12.2f}:{flag}")
+        print(f"{s.name:18s} {f'{a:.2f}:1':>14s} {f'{b:.2f}:1':>13s}{flag}")
         if min(a, b) < AA:
             failed = True
     return 1 if failed else 0

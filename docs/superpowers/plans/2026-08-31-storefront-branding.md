@@ -83,6 +83,14 @@ Expected: FAIL with `NameError: name 'verify' is not defined`
 
 Replace the whole file with:
 
+> **Corrected during execution.** The listing below has `ap.parse_args()` /
+> `return verify()`, which makes a bare invocation and `--verify` behaviourally
+> identical — both would exit 1 on failure, contradicting this module's own
+> docstring. This plan is a record of what was planned, so the listing is left
+> as written; `main()` was corrected in commit `1943b04` to branch on
+> `args.verify`, returning 0 on a bare invocation and only propagating the
+> failure status when `--verify` is passed.
+
 ```python
 #!/usr/bin/env python3
 """The five Lemon Squeezy storefront surfaces, and proof each one clears AA.
