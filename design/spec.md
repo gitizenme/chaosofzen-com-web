@@ -447,6 +447,19 @@ products divide.
 | Button | `#17786e` | The light-ground accent of §5.1 |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
 
+**The storefront themes five surfaces, not one.** Design settings expose
+Store, Checkout, Overlay checkout, Customer Portal and Emails separately, each
+able to override the theme's colours, while the button colour is offered once
+globally. Since §5.1 makes the accent ground-dependent, that single control
+spans surfaces that may not share a ground — and the wrong half of the pair is
+a measured failure, not a near miss: `#17786e` on `#0e0e14` is 3.62:1 and
+`#ffffff` on `#29b6a8` is 2.51:1.
+
+All five are therefore set light, matching the Vanilla theme and the website's
+default. `design/surfaces.py` records that and recomputes every ratio on
+`--verify`, carrying the rejected pairings alongside the accepted ones so a
+regression in the contrast maths cannot pass silently.
+
 **The header is ground plus mark, because the system contains no wide object.**
 The Rössler x–y projection is bounded in a near-circular region however long it
 is integrated — `t_end` adds loops, not width. Fitting the orbit to a 16:3 box

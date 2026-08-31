@@ -113,6 +113,13 @@ The values, and why each is what it is:
 | Button | `#17786e` | The light-ground accent. Not `#29b6a8`, for the reason directly above this section |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
 
+Lemon Squeezy themes **five surfaces independently** — Store, Checkout, Overlay
+checkout, Customer Portal and Emails — and offers one global button colour
+across them. Because the accent is ground-dependent, that global control is a
+trap: `#17786e` on a dark surface measures **3.62:1** and fails.
+[`surfaces.py`](surfaces.py) holds each surface's ground and accent and refuses
+a pairing below AA, via `python3 design/surfaces.py --verify`.
+
 The storefront crops the logo to a **circle**, which is why the mark is measured
 for circular containment (`measure_icon.py --circle`) rather than against the
 macOS rounded rect: 0.0% escaped, furthest ink at 86% of the radius.
