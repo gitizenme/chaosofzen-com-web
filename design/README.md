@@ -20,8 +20,9 @@ regenerate. An SVG edited by hand is immediately unreproducible, and the next
 regeneration silently reverts it.
 
 ```sh
-python3 design/mark.py --verify    # do the committed assets match the generator?
-python3 design/mark.py --write     # regenerate them
+python3 design/mark.py --verify       # do the committed assets match the generator?
+python3 design/surfaces.py --verify   # does every storefront surface clear AA?
+python3 design/mark.py --write        # regenerate them
 ```
 
 `--verify` exits non-zero on a mismatch, so it works in CI. It currently passes
