@@ -7,6 +7,7 @@ it. Nothing here ships to the browser; it generates what does.
 |---|---|
 | [`mark.py`](mark.py) | The generator. Produces every mark from the equations. |
 | [`spec.md`](spec.md) | Why the system is the way it is, and what was rejected. |
+| [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. Needs Inkscape and Pillow; run by hand. |
 
 ## The one rule
 
@@ -36,6 +37,7 @@ Standard library only. No dependencies.
 | `public/marks/chaos-of-zen.svg` | The house mark at full fidelity — feathers through all four voices |
 | `public/marks/ekphrasis.svg` | Stroke width is image brightness; barely lifts, because an image has no gaps |
 | `public/marks/seriatim.svg` | Four voices divide one orbit, each in its own colour |
+| `public/marks/seriatim-icon.svg` | The same four voices reduced for bundle icons — one loop, solid colours, on a dark rounded rect. The feather is dropped and the orbit is fitted to the ground: see BUG-4 and BUG-5 |
 
 Every mark is the same orbit drawn by the same brush. What separates them is
 **what drives the chaos** — so they are siblings by construction, not by styling.
@@ -106,7 +108,7 @@ All three licences permit bundling in distributed software, which matters for
 the plugin binaries later. A **wordmark is outlined** when it ships, so no font
 is embedded for it at all — the licence question applies only to live UI text.
 
-## Three constants that exist because of bugs
+## Five constants that exist because of bugs
 
 Each was invisible to visual review and only appeared under measurement. They
 are marked `BUG-N` in `mark.py` and explained in `spec.md`. Do not "simplify"
@@ -121,3 +123,16 @@ them away.
 3. **Split voices by arc length, not by time.** A spiral's outer quarter runs
    about eight times its inner one: 98 px of ink against 769. Arc length brings
    four voices to 460–500 px each, a balance of 0.92.
+4. **The feather, not the loop count, is what breaks a mark at icon size.**
+   At 16 px a voice's ink half and pigment half average into a midtone that is
+   neither, so the shipping mark retains *zero* of its four voices. Shortening
+   the orbit — the obvious fix, and the one `spec.md` proposed for two
+   revisions — rescues one voice of four.
+5. **Fit an icon's orbit to the ground rect, not to the canvas.** `fit_one`
+   fits to the full 128 units; the ground covers the middle 103, and the stroke
+   adds a half-width beyond the centreline on top of that. The first icon to
+   pass the legibility metric had **42% of its ink outside the rounded rect** —
+   three voices drawn on the desktop rather than on the icon — because a metric
+   that counts coloured pixels cannot tell where they are. This is the one
+   defect here that measurement missed and looking caught; `measure_icon.py`
+   checks containment now.

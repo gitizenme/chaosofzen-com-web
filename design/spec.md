@@ -220,14 +220,55 @@ sensitive dependence.
 
 ### 4.5 Reduction for icon sizes
 
-Icon renderings use the **two-loop orbit** (`t_end = 13.2`), three filaments, and
-lift reduced by 0.35 (floored at zero), against a heavier stroke. Same curve, same
-law, integrated for less time — a parameter, not a second drawing.
+Icon renderings use `seriatim_icon()`: the same orbit, the same brush, the same
+arc-length voice split and the same rests, with `t_end` 26.0 → 11.0, `bristles`
+4 → 2, stroke width 2.6–8.0 → 14.0–22.0, `margin` 13 → 30, `gap` 0.12 → 0.14,
+and **the ink→colour feather turned off** so each voice is solid in its own
+colour. A `#0e0e14` rounded rect on the macOS icon grid sits behind it.
 
-**This is not fully solved.** 16 px remains the weakest point of the system and is
-the one constraint an `.icns` will not forgive. Seriatim's four voices survive
-small sizes better than a single spiral does, because colour separation carries
-where geometry cannot.
+**The feather is what breaks the mark at icon size, not the loop count.** An
+earlier version of this section proposed a two-loop orbit (`t_end = 13.2`),
+three filaments and reduced lift against a heavier stroke, and expected that to
+carry. It does not. Measured with `design/measure_icon.py` — render at 16 px,
+classify every non-ground pixel to its nearest palette entry in RGB distance,
+count it under a distance of 60, and report how many of the four voices retain
+at least 3 px:
+
+| Construction | Voices readable | Balance |
+|---|---|---|
+| The full mark, unmodified | 0 of 4 | 0.00 |
+| Two-loop orbit, feather retained | 1 of 4 | 0.00 |
+| Heavier stroke, feather retained | 4 of 4 | 0.25 |
+| **Feather dropped, fitted to the ground** | **4 of 4** | **1.00** |
+
+At 16 px a voice spans about ten pixels, so its ink half and its pigment half
+average into a midtone that classifies as neither. The handover is what makes
+the mark look wet at 512 px and is exactly what destroys it at 16. Keeping it
+and adding weight brings all four voices back but at a 0.25 balance — sage at
+24 px against amber at 6 — because how much of a voice survives then depends on
+where its handover happened to fall.
+
+**A second constraint, and the only defect in this system that measurement
+missed and looking caught.** The first construction to satisfy the table above
+scored 4 of 4 at a 0.91 balance while **42% of its ink lay outside the rounded
+rect** — three of the four voices were drawn on the desktop rather than on the
+icon. `fit_one` fits the orbit to the 128-unit canvas, but the ground covers
+only the middle 103, and the stroke extends a further half-width beyond the
+fitted centreline. The metric was satisfied by voices that had escaped, because
+counting coloured pixels cannot tell you where they are.
+
+Refitting to the ground cost nothing. `margin = 30` with a 14–22 stroke and a
+0.14 gap measures **4 of 4 at a balance of 1.00, fully contained** — better than
+the escaped version on the metric the escaped version was tuned for.
+`measure_icon.py` now reports an escaped fraction and exits non-zero above a
+rounding error, so this cannot recur silently.
+
+1.00 sits above where the arc-length split landed at full size (0.92), which is
+the argument that this is the same system reduced rather than a second drawing.
+**§3's one-system property holds.**
+
+This does not claim detail at 16 px. Four coloured arcs around a void read as a
+mark at that size; the brush does not survive and is not meant to.
 
 ---
 
@@ -393,9 +434,13 @@ appearing to be matters of taste.
    three are OFL 1.1 and verified embeddable -- see §6. One sub-question remains:
    whether the mono becomes Source Code Pro for family coherence, or stays Plex
    Mono, which already ships.
-2. **16 px.** The reduced orbit helps and does not finish the job. May need a
-   dedicated icon-only construction, which would break the "one system, one
-   parameter" property in §3.
+2. ~~**16 px.**~~ **Resolved 2026-08-31.** The reduced orbit was the wrong
+   parameter; the feather was the right one, and fitting to the ground rect
+   rather than to the canvas was a second one nobody had asked about. See §4.5.
+   No dedicated icon-only construction was needed and §3's one-system property
+   is intact. What remains open is the crossover: the full mark is used from
+   128 px up on the assertion that it reads there, and that assertion has not
+   been through §4.1's measurement.
 3. **Sequencing against the host smoke test.** `docs/superpowers/checklists/host-smoke-test.md`
    is an unpassed release gate, and the README records that a sibling project
    shipped the same class of unit-display bug three times because only a real host

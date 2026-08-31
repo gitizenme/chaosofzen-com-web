@@ -361,6 +361,66 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
     return ''.join(out)
 
 
+# Icon construction. The same orbit, the same brush, the same arc-length voice
+# split and the same rests as seriatim_mark(). Five numbers change and the
+# ink->colour feather is turned off.
+#
+# BUG-4: THE FEATHER IS WHAT BREAKS THE MARK AT ICON SIZE, NOT THE LOOP COUNT.
+# This file used to propose a shorter integration (t_end 13.2, three filaments,
+# reduced lift) for icon sizes. Measured at 16 px with design/measure_icon.py,
+# that rescues ONE voice of four. The shipping mark rescues none. A heavier
+# stroke with the feather intact rescues four but at a 0.25 min/max balance,
+# because how much of a voice survives depends on where its handover happened
+# to fall. Dropping the feather gives 4 of 4 at 0.91 -- the same balance the
+# arc-length split achieves at full size.
+#
+# The cause: at 16 px a voice spans about ten pixels, so its ink half and its
+# pigment half average into a single midtone that classifies as neither. The
+# handover is what makes the mark look wet at 512 px and is exactly what
+# destroys it at 16.
+ICON_W = lambda t: 14.0 + 8.0 * math.sin(math.pow(t, .7) * math.pi)
+
+# macOS icon grid: the rounded rect occupies 824 of 1024, i.e. 103 of 128, with
+# a corner radius of 185.4/1024 -> 23.2/128. Without a ground the icon is
+# transparent, and sage (#a8c686) is the one voice colour section 5.1 records
+# as not carrying onto light -- so a transparent icon loses a voice on a light
+# Finder window, which is the exact failure this construction exists to prevent.
+ICON_GROUND = ('<rect x="12.5" y="12.5" width="103" height="103" '
+               'rx="23.2" ry="23.2" fill="#0e0e14"/>')
+
+# BUG-5: THE ORBIT MUST BE FITTED TO THE GROUND RECT, NOT TO THE CANVAS.
+# margin is 30, not the 6 the full mark uses, because fit_one fits to the
+# 128-unit canvas while the ground covers only the middle 103 -- and the
+# stroke then extends a further half-width beyond the fitted centreline. The
+# first version of this function used margin=6 and scored 4 of 4 voices at a
+# 0.91 balance with 42% of its ink OUTSIDE the rounded rect: three voices were
+# drawn on the desktop rather than on the icon. It passed measure_icon.py,
+# because a metric that counts coloured pixels cannot tell where they are.
+# measure_icon.py now checks containment for exactly this reason.
+#
+# Refitting cost nothing: t_end 11.0 with a 14-22 stroke and a 0.14 gap
+# measures 4 of 4 at a balance of 1.00, fully contained -- better than the
+# escaped version on its own metric.
+
+
+def seriatim_icon(voices: int = 4, gap: float = 0.14) -> str:
+    """Seriatim's mark reduced for bundle icons -- see BUG-4 and BUG-5 above."""
+    orbit = fit_one(rossler(t_end=11.0, step=5), margin=30.0)
+    to_param = arc_param(orbit)
+    span = 1.0 / voices
+    out = [ICON_GROUND]
+    for k in range(voices):
+        lo = to_param(k * span + gap * span)
+        hi = to_param((k + 1) * span - gap * span)
+        colour = VOICE[k % len(VOICE)]
+        stops = [(0, colour), (1, colour)]      # solid: no ink handover
+        width = (lambda l, h: lambda t:
+                 ICON_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
+        out.append(brush(orbit, width, stops, bristles=2, dry=0.0,
+                         wobble=0.0, seed0=SEEDS[k], lo=lo, hi=hi))
+    return ''.join(out)
+
+
 def _svg(body: str, label: str) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" '
             f'role="img" aria-label="{label}">\n  {body}\n</svg>\n')
@@ -380,11 +440,16 @@ def seriatim_mark_svg() -> str:
     return _svg(seriatim_mark(), "Seriatim")
 
 
+def seriatim_icon_svg() -> str:
+    return _svg(seriatim_icon(), "Seriatim")
+
+
 ASSETS = {
     "public/favicon.svg": favicon_svg,
     "public/marks/chaos-of-zen.svg": house_mark_svg,
     "public/marks/ekphrasis.svg": ekphrasis_mark_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
+    "public/marks/seriatim-icon.svg": seriatim_icon_svg,
 }
 
 
