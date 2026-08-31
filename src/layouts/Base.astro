@@ -15,6 +15,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://chaosofzen.
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
+    {/* The site declared no icon at all until now, so every browser fell back to
+        /favicon.ico -- which was still the Astro starter icon. Safari only gained
+        SVG favicon support in version 26, so the raster fallbacks are not
+        belt-and-braces; they are what most Safari installs will actually use. */}
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={new URL(ogImage, canonical).href} />
