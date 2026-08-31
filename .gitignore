@@ -31,3 +31,6 @@ playwright/.cache/
 
 # demo recording project (source project, not the exported media in public/media/)
 /assets/
+
+# design/ is Python; header.py imports mark.py
+__pycache__/

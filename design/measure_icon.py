@@ -9,7 +9,8 @@ Two things, because measuring only the first one lets a real defect through.
 
 2. CONTAINMENT. If the mark carries a ground rect, render it again WITHOUT
    that rect and report how much of the ink falls outside where the ground
-   would have been.
+   would have been. The rect's geometry is read off the asset -- see GROUND_RE.
+   Pass --circle for assets whose consumer crops them round.
 
 BUG-5: the first icon that passed this tool scored 4 of 4 voices at a 0.91
 balance with 43% of its ink OUTSIDE the rounded rect -- three of the four
@@ -23,6 +24,8 @@ and Pillow, neither of which mark.py depends on -- run it by hand, not in CI.
 
     python3 design/measure_icon.py public/marks/seriatim.svg \
                                    public/marks/seriatim-icon.svg
+    python3 design/measure_icon.py --size 32 design/store/favicon.svg
+    python3 design/measure_icon.py --size 320 --circle design/store/logo.svg
 """
 import subprocess
 import sys
@@ -45,10 +48,17 @@ VOICES = {
 THRESHOLD = 60
 MIN_PIXELS = 3
 
-# The ground rect in viewBox units: the macOS icon grid's 824/1024, i.e.
-# 103 of 128, inset 12.5 either side.
-GROUND_RECT = (12.5, 12.5, 115.5, 115.5)
+# The ground rect is PARSED from the asset, not assumed. There are two ground
+# geometries in this system now -- seriatim_icon()'s macOS grid rect (824/1024,
+# i.e. 103 of 128, inset 12.5 either side) and the store assets' full-bleed
+# 128x128 -- and measuring the second against the first reports a 3.1% escape
+# for ink that is comfortably on its own ground. That is BUG-5's failure mode
+# running backwards: a containment metric that is wrong about where the ground
+# is will lie in whichever direction its constant happens to point.
 GROUND_FILL = 'fill="#0e0e14"'
+GROUND_RE = (r'<rect\b(?=[^>]*' + GROUND_FILL + r')[^>]*?'
+             r'x="([\d.]+)"[^>]*?y="([\d.]+)"[^>]*?'
+             r'width="([\d.]+)"[^>]*?height="([\d.]+)"[^>]*/>')
 
 
 def dist(a, b):
@@ -65,40 +75,52 @@ def render(svg_text: str, png: Path, size: int, background: str | None = None):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def escaped_fraction(svg_text: str, tmp: Path, size: int = 256) -> float | None:
-    """How much ink falls outside the ground rect. None if there is no ground.
+def escaped_fraction(svg_text: str, tmp: Path, size: int = 256,
+                     circle: bool = False) -> float | None:
+    """How much ink falls outside the ground. None if there is no ground.
 
     Renders with the ground rect stripped, so every non-transparent pixel is
     mark ink rather than backdrop.
+
+    `circle` measures against the inscribed circle instead of GROUND_RECT, for
+    assets whose consumer crops them round -- the Lemon Squeezy storefront
+    avatar does. BUG-5 was ink sitting outside a rounded rect; the same class
+    of defect against a circle would look identical from here, so it gets the
+    same measurement rather than an assumption.
     """
     import re
-    stripped, n = re.subn(r"<rect\b[^>]*" + re.escape(GROUND_FILL) + r"[^>]*/>",
-                          "", svg_text)
-    if n == 0:
+    m = re.search(GROUND_RE, svg_text)
+    if m is None:
         return None
+    gx, gy, gw, gh = (float(v) for v in m.groups())
+    stripped = svg_text[:m.start()] + svg_text[m.end():]
     png = tmp / "noground.png"
     render(stripped, png, size)
     im = Image.open(png).convert("RGBA")
     px = im.load()
     sc = size / 128.0
-    x0, y0, x1, y1 = (v * sc for v in GROUND_RECT)
+    x0, y0, x1, y1 = gx * sc, gy * sc, (gx + gw) * sc, (gy + gh) * sc
+    c = size / 2.0
     total = outside = 0
     for y in range(size):
         for x in range(size):
             if px[x, y][3] > 40:
                 total += 1
-                if x < x0 or x > x1 or y < y0 or y > y1:
+                if circle:
+                    if (x + .5 - c) ** 2 + (y + .5 - c) ** 2 > c * c:
+                        outside += 1
+                elif x < x0 or x > x1 or y < y0 or y > y1:
                     outside += 1
     return (outside / total) if total else 0.0
 
 
-def measure(svg: Path, size: int = 16):
+def measure(svg: Path, size: int = 16, circle: bool = False):
     svg_text = svg.read_text()
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
         png = tmp / "out.png"
         render(svg_text, png, size, background="#0e0e14")
-        escaped = escaped_fraction(svg_text, tmp)
+        escaped = escaped_fraction(svg_text, tmp, circle=circle)
         im = Image.open(png).convert("RGB")
         counts = {k: 0 for k in VOICES}
         lit = 0
@@ -128,14 +150,24 @@ def measure(svg: Path, size: int = 16):
 
 
 def main(argv):
-    if len(argv) < 2:
-        print(__doc__)
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("assets", nargs="*", help="SVG files to measure")
+    ap.add_argument("--size", type=int, default=16,
+                    help="render size in px (default 16)")
+    ap.add_argument("--circle", action="store_true",
+                    help="measure containment against the inscribed circle "
+                         "rather than the macOS rounded rect")
+    args = ap.parse_args(argv[1:])
+    if not args.assets:
+        ap.print_help()
         return 1
     print(f"{'asset':34s} {'voices':>6s} {'balance':>8s} {'coverage':>9s} "
           f"{'escaped':>8s}")
     failed = False
-    for arg in argv[1:]:
-        r = measure(Path(arg))
+    for arg in args.assets:
+        r = measure(Path(arg), size=args.size, circle=args.circle)
         esc = "n/a" if r["escaped"] is None else f"{r['escaped'] * 100:.1f}%"
         print(f"{arg:34s} {r['readable']:>4d}/4 {r['balance']:>8.2f} "
               f"{r['coverage'] * 100:>8.1f}% {esc:>8s}")
