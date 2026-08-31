@@ -9,5 +9,20 @@
   },
   "assets": {
     "directory": "./dist"
-  }
+  },
+  // Serve the real domain. These overlay the apex/www DNS records, which are
+  // proxied A/CNAME records still pointing at Squarespace's forwarding
+  // infrastructure -- with these routes in place Cloudflare runs the Worker
+  // instead of proxying to that origin, so the old 301 to chaosofzen.dev no
+  // longer fires. Deleting these routes reverts to that redirect, which makes
+  // this the cheapest rollback available.
+  "routes": [
+    { "pattern": "chaosofzen.com/*", "zone_name": "chaosofzen.com" },
+    { "pattern": "www.chaosofzen.com/*", "zone_name": "chaosofzen.com" }
+  ],
+  // Keep the *.workers.dev hostname alive. Adding "routes" above makes Wrangler
+  // disable it by default, which 404s the staging URL -- and the Lemon Squeezy
+  // post-purchase redirect still points there. Also a useful fallback for
+  // reaching the site if the custom domain ever has DNS trouble.
+  "workers_dev": true
 }
