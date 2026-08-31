@@ -25,9 +25,9 @@ python3 design/surfaces.py --verify   # does every storefront surface clear AA?
 python3 design/mark.py --write        # regenerate them
 ```
 
-`--verify` exits non-zero on a mismatch, so it works in CI. It currently passes
-byte-for-byte against `public/favicon.svg` — that is what makes this a source of
-truth rather than a copy of one.
+Both `--verify` commands exit non-zero on a mismatch, so they work in CI. `mark.py --verify`
+verifies that every committed asset matches the generator byte-for-byte — that is what makes
+this a source of truth rather than a copy of one.
 
 Standard library only. No dependencies.
 
