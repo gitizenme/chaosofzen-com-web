@@ -59,14 +59,18 @@ than Python:
   rasterised from the mark. Regenerating needs a renderer; the ICO is a
   hand-assembled container around 16/32/48 PNG payloads, valid since Vista.
 - **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`,
-  `design/store/product-seriatim-1024.png`) — what actually gets uploaded, since
-  the storefront takes PNG. Rasterised from the three SVGs above with Inkscape:
+  `design/store/product-seriatim-1024.png`, `design/store/header-1600.png`) — what
+  actually gets uploaded, since the storefront takes PNG. The first three come from
+  the store SVGs in the table above; the header comes from `header.svg`, which
+  [`header.py`](header.py) generates rather than `mark.py`. All four rasterise the
+  same way:
 
   ```sh
   cd design/store
   inkscape logo.svg    -w 320 -h 320 --export-filename=logo-320.png
   inkscape favicon.svg -w  32 -h  32 --export-filename=favicon-32.png
   inkscape product-seriatim.svg -w 1024 -h 1024 --export-filename=product-seriatim-1024.png
+  inkscape header.svg  -w 1600 -h 300 --export-filename=header-1600.png
   ```
 
 - **The social card** (`public/og/default.png`) — rendered in a browser served
