@@ -9,6 +9,7 @@ it. Nothing here ships to the browser; it generates what does.
 | [`spec.md`](spec.md) | Why the system is the way it is, and what was rejected. |
 | [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. Needs Inkscape and Pillow; run by hand. |
 | [`header.py`](header.py) | The storefront header — the mark locked up with an outlined wordmark. Needs fontTools, uharfbuzz, Inkscape and Astro's downloaded Literata; run by hand. |
+| [`surfaces.py`](surfaces.py) | Records each storefront surface's ground and accent, and checks every pairing clears WCAG AA. Standard library only; run by hand. |
 
 ## The one rule
 
@@ -20,12 +21,15 @@ regenerate. An SVG edited by hand is immediately unreproducible, and the next
 regeneration silently reverts it.
 
 ```sh
-python3 design/mark.py --verify    # do the committed assets match the generator?
-python3 design/mark.py --write     # regenerate them
+python3 design/mark.py --verify       # do the committed assets match the generator?
+python3 design/surfaces.py --verify   # does every storefront surface clear AA?
+python3 design/mark.py --write        # regenerate them
 ```
 
-`--verify` exits non-zero on a mismatch, so it works in CI. It currently passes
-byte-for-byte against `public/favicon.svg` — that is what makes this a source of
+Both `--verify` commands exit non-zero on a mismatch. CI ignores `design/**` on
+every push and pull request, so neither runs automatically anywhere — `design/`
+is verified locally, by design. `mark.py --verify` checks that every committed
+asset matches the generator byte-for-byte — that is what makes this a source of
 truth rather than a copy of one.
 
 Standard library only. No dependencies.
@@ -41,26 +45,32 @@ Standard library only. No dependencies.
 | `public/marks/seriatim-icon.svg` | The same four voices reduced for bundle icons — one loop, solid colours, on a dark rounded rect. The feather is dropped and the orbit is fitted to the ground: see BUG-4 and BUG-5 |
 | `design/store/logo.svg` | The merchant avatar for the Lemon Squeezy storefront — the full house mark on an opaque full-bleed `#0e0e14`, ink baked rather than `currentColor` |
 | `design/store/favicon.svg` | The storefront tab icon — `reduced_body()` with baked ink and the same opaque ground |
+| `design/store/product-seriatim.svg` | Seriatim's storefront thumbnail, the four-voice mark on the opaque store ground. The one store asset that takes a product mark rather than the house mark. |
 
 Every mark is the same orbit drawn by the same brush. What separates them is
 **what drives the chaos** — so they are siblings by construction, not by styling.
 
 ## What it does *not* generate
 
-Two asset groups are committed as binaries because reproducing them needs more
+Three asset groups are committed as binaries because reproducing them needs more
 than Python:
 
 - **Raster icons** (`favicon.ico`, `icon-*.png`, `apple-touch-icon.png`) —
   rasterised from the mark. Regenerating needs a renderer; the ICO is a
   hand-assembled container around 16/32/48 PNG payloads, valid since Vista.
-- **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`) —
-  what actually gets uploaded, since the storefront takes PNG. Rasterised from
-  the two SVGs above with Inkscape:
+- **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`,
+  `design/store/product-seriatim-1024.png`, `design/store/header-1600.png`) — what
+  actually gets uploaded, since the storefront takes PNG. The first three come from
+  the store SVGs in the table above; the header comes from `header.svg`, which
+  [`header.py`](header.py) generates rather than `mark.py`. All four rasterise the
+  same way:
 
   ```sh
   cd design/store
   inkscape logo.svg    -w 320 -h 320 --export-filename=logo-320.png
   inkscape favicon.svg -w  32 -h  32 --export-filename=favicon-32.png
+  inkscape product-seriatim.svg -w 1024 -h 1024 --export-filename=product-seriatim-1024.png
+  inkscape header.svg  -w 1600 -h 300 --export-filename=header-1600.png
   ```
 
 - **The social card** (`public/og/default.png`) — rendered in a browser served
@@ -109,9 +119,17 @@ The values, and why each is what it is:
 | Header | `design/store/header-1600.png` | 1600×300. ~45 KB against a 10 MB cap |
 | Logo | `design/store/logo-320.png` | 2× the recommended 160, for retina. ~50 KB against a 1 MB cap |
 | Favicon | `design/store/favicon-32.png` | ~1.7 KB |
+| Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark. 1024×1024 is assumed — no dashboard access to confirm the cap |
 | Theme | **Vanilla** | The only neutral ground on offer. Kiwi, Lime and Blueberry impose green, mint and purple card backgrounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent. Not `#29b6a8`, for the reason directly above this section |
 | Button text | `#ffffff` | **5.32:1** on that fill — clears AA |
+
+Lemon Squeezy themes **five surfaces independently** — Store, Checkout, Overlay
+checkout, Customer Portal and Emails — and offers one global button colour
+across them. Because the accent is ground-dependent, that global control is a
+trap: `#17786e` on a dark surface measures **3.62:1** and fails.
+[`surfaces.py`](surfaces.py) holds each surface's ground and accent and refuses
+a pairing below AA, via `python3 design/surfaces.py --verify`.
 
 The storefront crops the logo to a **circle**, which is why the mark is measured
 for circular containment (`measure_icon.py --circle`) rather than against the
@@ -130,7 +148,7 @@ The lockup is centred and measured against the centre-crops a wide banner gets
 keeps 84.6%. If the storefront turns out to crop harder than 2.5:1 on narrow
 viewports, the fix is a smaller lockup, not a rearranged one.
 
-All three store assets bake their own ground. Everything in `public/` is built to
+All four store assets bake their own ground. Everything in `public/` is built to
 inherit one — `favicon.svg` emits `currentColor`, the raster icons are
 transparent — and an inherited ground is an invisible mark on a light card we
 do not control.
