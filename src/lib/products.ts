@@ -27,7 +27,18 @@ export interface Product {
 // nothing.
 export const PLACEHOLDER_VARIANT_ID = 'PLACEHOLDER-NO-LEMON-SQUEEZY-PRODUCT-YET';
 
-export const PRODUCTS: Record<'seriatim' | 'ekphrasis', Product> = {
+// The products this site ships. ONE definition, used two ways: as the type of
+// PRODUCTS' keys, and as the changelog collection's `product` enum
+// (src/content.config.ts). They were previously independent -- a slug could be
+// added to the enum with no product and no pages behind it, and it validated,
+// type-checked, built clean and rendered nowhere. Now each is a compile error
+// in both directions: a slug here with no entry in PRODUCTS is a missing
+// property, and a product in PRODUCTS that is not listed here is an unknown
+// one.
+export const PRODUCT_SLUGS = ['seriatim', 'ekphrasis'] as const;
+export type ProductSlug = (typeof PRODUCT_SLUGS)[number];
+
+export const PRODUCTS: Record<ProductSlug, Product> = {
   seriatim: {
     downloadUrl: 'https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg',
     manifestUrl: 'https://dl.chaosofzen.dev/seriatim/latest.json',

@@ -1,10 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
-import { SUGGESTED_PRICE_CENTS } from '../../lib/store';
 import { PRODUCTS } from '../../lib/products';
 
-const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
+const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
 ---
 <Base
   title="Download Seriatim — Chaos of Zen"
@@ -40,8 +39,14 @@ const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
 
 <script>
   import { parsePrice } from '../../lib/price';
-  import { checkoutUrl, SERIATIM_VARIANT_ID } from '../../lib/store';
-  import { DOWNLOAD_URL } from '../../lib/download';
+  import { checkoutUrl } from '../../lib/store';
+  import { PRODUCTS } from '../../lib/products';
+
+  // Read off the product record, by key, the way the Ekphrasis page does.
+  // This file used to mix both conventions -- PRODUCTS.seriatim for the badge,
+  // bare aliases for the urls -- which is how the two pages that do the same
+  // job stopped looking alike.
+  const { downloadUrl, variantId } = PRODUCTS.seriatim;
 
   const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;
   const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]')!;
@@ -62,14 +67,14 @@ const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
     if (result.kind === 'free') {
       // Straight to the file. No interstitial, no thank-you detour, no
       // "consider donating" nag -- the person already answered that question.
-      window.location.href = DOWNLOAD_URL;
+      window.location.href = downloadUrl;
       return;
     }
 
     // The amount typed here doesn't travel to Lemon Squeezy -- their own
     // checkout page has its own editable price field for this product
-    // (Pay What You Want), defaulting to SUGGESTED_PRICE_CENTS. See the
-    // comment on checkoutUrl() for why.
-    window.location.href = checkoutUrl(SERIATIM_VARIANT_ID);
+    // (Pay What You Want), defaulting to the product's suggestedPriceCents.
+    // See the comment on checkoutUrl() for why.
+    window.location.href = checkoutUrl(variantId);
   });
 </script>

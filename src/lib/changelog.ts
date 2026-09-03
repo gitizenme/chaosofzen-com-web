@@ -1,8 +1,7 @@
-// Source of truth for which products a changelog entry can belong to.
-// src/content.config.ts imports this rather than repeating the literal, so
-// the schema and this module cannot silently disagree on what's valid.
-export const PRODUCT_SLUGS = ['seriatim', 'ekphrasis'] as const;
-export type ProductSlug = (typeof PRODUCT_SLUGS)[number];
+// Which products a changelog entry can belong to is not a fact about the
+// changelog: it is PRODUCT_SLUGS, defined beside the product record itself, so
+// that a slug cannot exist here without a product behind it.
+import type { ProductSlug } from './products';
 
 // Splits a version like "1.4.0-rc1" into its numeric components ([1, 4, 0])
 // and whether it carries a pre-release suffix. A component that still isn't

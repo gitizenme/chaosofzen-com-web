@@ -1,11 +1,18 @@
 import { PRODUCTS } from './products';
 
-// The download url is a STABLE ALIAS, hardcoded. The release pipeline
-// overwrites the object behind it on every release, which is what lets a
-// plugin release ship without redeploying this site. Never substitute a
-// versioned url here -- that reintroduces the coupling this avoids.
+// SERIATIM's download url, and only Seriatim's. This bare export exists for one
+// reason: /seriatim/thanks still imports it, from before there was a second
+// product. It is not a general "the download url" -- reusing it on another
+// product's page is the copy-paste that sells one product and ships another,
+// so anything new reads PRODUCTS[<slug>].downloadUrl by key instead. An alias
+// lives here only while a page still imports it; MANIFEST_URL was removed when
+// the last page stopped.
+//
+// The url itself is a STABLE ALIAS, hardcoded. The release pipeline overwrites
+// the object behind it on every release, which is what lets a plugin release
+// ship without redeploying this site. Never substitute a versioned url here --
+// that reintroduces the coupling this avoids.
 export const DOWNLOAD_URL = PRODUCTS.seriatim.downloadUrl;
-export const MANIFEST_URL = PRODUCTS.seriatim.manifestUrl;
 
 export interface Manifest {
   version: string;

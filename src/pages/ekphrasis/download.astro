@@ -62,10 +62,9 @@ const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
   import { checkoutUrl } from '../../lib/store';
   import { PRODUCTS } from '../../lib/products';
 
-  // Read off the product record, not off download.ts/store.ts: those modules'
-  // bare DOWNLOAD_URL and SERIATIM_VARIANT_ID exports are Seriatim's, and
-  // reusing them here is exactly the copy-paste that would sell one product
-  // and ship another.
+  // Read off the product record, by key: download.ts's bare DOWNLOAD_URL is
+  // SERIATIM's, and reusing it here is exactly the copy-paste that would sell
+  // one product and ship another.
   const { downloadUrl, variantId } = PRODUCTS.ekphrasis;
 
   const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;

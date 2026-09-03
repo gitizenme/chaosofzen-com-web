@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from './products';
-import { DOWNLOAD_URL, MANIFEST_URL } from './download';
-import { SERIATIM_VARIANT_ID, SUGGESTED_PRICE_CENTS } from './store';
+import { DOWNLOAD_URL } from './download';
 
 describe('PRODUCTS', () => {
   it('has exactly the two products the site ships', () => {
@@ -35,30 +34,34 @@ describe('PRODUCTS', () => {
   });
 });
 
-// The whole point of the alias layer: Seriatim's pages import these names and
-// are live. Equality against the literals they had BEFORE this refactor is what
-// proves the refactor cannot have changed what they resolve to.
-describe('seriatim aliases are unchanged by the refactor', () => {
-  it('DOWNLOAD_URL', () => {
+// Seriatim is live. These are the literals its pages resolved to BEFORE the
+// record existed, so equality against them is what proves the refactor that
+// introduced PRODUCTS -- and the migration that has since retired most of the
+// aliases -- cannot have changed a url, a price or a checkout id under a
+// shipping product.
+//
+// They are asserted on the record itself now rather than through an alias:
+// every alias but DOWNLOAD_URL is gone, because the pages that imported them
+// read PRODUCTS.seriatim by key instead. An alias that no page imports pins a
+// value nothing uses.
+describe('seriatim resolves to the same values it did before the record existed', () => {
+  it('download url', () => {
+    expect(PRODUCTS.seriatim.downloadUrl).toBe('https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg');
+  });
+  it('manifest url', () => {
+    expect(PRODUCTS.seriatim.manifestUrl).toBe('https://dl.chaosofzen.dev/seriatim/latest.json');
+  });
+  it('checkout variant id', () => {
+    expect(PRODUCTS.seriatim.variantId).toBe('b6654c01-a0a8-473b-a260-bbb84d08b9ba');
+  });
+  it('suggested price', () => {
+    expect(PRODUCTS.seriatim.suggestedPriceCents).toBe(1200);
+  });
+  // The one alias with a live consumer left (/seriatim/thanks). toBe is value
+  // equality on strings, so this cannot distinguish a genuine alias from a
+  // coincidentally-equal literal; what it checks is that the two agree.
+  it('DOWNLOAD_URL, which /seriatim/thanks still imports, agrees with the record', () => {
     expect(DOWNLOAD_URL).toBe('https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg');
-  });
-  it('MANIFEST_URL', () => {
-    expect(MANIFEST_URL).toBe('https://dl.chaosofzen.dev/seriatim/latest.json');
-  });
-  it('SERIATIM_VARIANT_ID', () => {
-    expect(SERIATIM_VARIANT_ID).toBe('b6654c01-a0a8-473b-a260-bbb84d08b9ba');
-  });
-  it('SUGGESTED_PRICE_CENTS', () => {
-    expect(SUGGESTED_PRICE_CENTS).toBe(1200);
-  });
-  // toBe is value equality on strings/numbers, so this cannot distinguish a
-  // genuine alias from a coincidentally-equal literal -- the four literal
-  // assertions above already pin both sides independently. What this checks
-  // is that the alias and the record agree.
-  it('the alias and the record agree', () => {
     expect(DOWNLOAD_URL).toBe(PRODUCTS.seriatim.downloadUrl);
-    expect(MANIFEST_URL).toBe(PRODUCTS.seriatim.manifestUrl);
-    expect(SERIATIM_VARIANT_ID).toBe(PRODUCTS.seriatim.variantId);
-    expect(SUGGESTED_PRICE_CENTS).toBe(PRODUCTS.seriatim.suggestedPriceCents);
   });
 });

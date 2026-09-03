@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
-import { entriesFor, changelogAnchor, type ProductSlug } from './changelog';
+import { entriesFor, changelogAnchor } from './changelog';
+import type { ProductSlug } from './products';
 
 const entries: { data: { product: ProductSlug; version: string; title: string; date: string } }[] = [
   { data: { product: 'seriatim', version: '1.5.0', title: 'a', date: '2026-08-28' } },
