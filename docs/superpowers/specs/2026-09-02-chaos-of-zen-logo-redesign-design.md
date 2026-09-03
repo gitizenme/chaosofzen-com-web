@@ -114,7 +114,16 @@ On the macOS grid the icon sits on the existing `ICON_GROUND` rounded rect (`#0e
 
 ### 3.3 Measurement
 
-`design/measure_icon.py` at 16 and 32 px: escaped fraction must be 0.0 %, and all three colour bands plus the ink loop must survive classification at 16 px. Record the numbers in this document when measured.
+`design/measure_icon.py` at 16 and 32 px: escaped fraction must be 0.0 %, and all three colour bands plus the ink loop must survive classification at 16 px. Measured (`--bands` classifies against the asset's own colours rather than the four voices):
+
+| Asset | Size | Escaped | Readable bands |
+|---|---|---|---|
+| `public/marks/chaos-of-zen-icon.svg` | 16 px | 0.0 % | 3 of 3 |
+| `public/marks/chaos-of-zen-icon.svg` | 32 px | 0.0 % | 3 of 3 |
+| `design/store/favicon.svg` (`--circle`) | 32 px | 0.0 % | 3 of 3 |
+| `public/marks/seriatim-icon.svg` | 16 px | 0.0 % | 3 of 4 voices (amber at 1 px, below `MIN_PIXELS`) |
+
+Seriatim's icon carries the pre-existing four-voice rule (§4), unchanged by this pass; its amber band was already under `MIN_PIXELS` at 16 px before this measurement existed to see it, and widening `ICON_LOOP_W` by up to 2.0 in both terms (tried and reverted) raised it only to 2 px. Left as a known gap — see the redesign's task-8 report.
 
 ---
 
