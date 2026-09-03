@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import re
 import sys
 from pathlib import Path
 
@@ -174,26 +173,200 @@ def ramp(stops, t: float) -> str:
     return stops[-1][1]
 
 
-def house_stops(ink: str, feather: float = 0.10):
-    """The house mark carries every voice, in the order the score lists them."""
-    w = max(feather, 0.04)
-    return [(0, ink), (.30, ink), (.30 + w, TEAL), (.52, TEAL),
-            (.52 + w, SAGE), (.68, SAGE), (.68 + w, AMBER),
-            (.84, AMBER), (.84 + w, VERMILION), (1, VERMILION)]
-
-
 def single_stops(ink: str, colour: str, at: float = 0.84, feather: float = 0.26):
     """One handover: ink into a single accent, centred at `at`."""
     return [(0, ink), (at - feather / 2, ink), (at + feather / 2, colour), (1, colour)]
 
 
 # --------------------------------------------------------------------------
+# The spectrum
+#
+# The coloured half of the house mark carries the whole hue circle, as the
+# original painting does. It is defined in oklch at CONSTANT lightness and
+# chroma so no hue shouts: L and C sit close to the means of the four voice
+# colours' own oklch values (0.73 / 0.14), so the sweep sits at the voices'
+# lightness.
+# --------------------------------------------------------------------------
+SPECTRUM_L, SPECTRUM_C = 0.70, 0.15
+
+
+def _srgb_to_linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _linear_to_srgb(c: float) -> float:
+    c = min(max(c, 0.0), 1.0)
+    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def oklch_to_hex(L: float, C: float, H: float) -> str:
+    """oklch -> sRGB hex, gamut-clipped per channel."""
+    a = C * math.cos(math.radians(H))
+    b = C * math.sin(math.radians(H))
+    l_ = L + 0.3963377774 * a + 0.2158037573 * b
+    m_ = L - 0.1055613458 * a - 0.0638541728 * b
+    s_ = L - 0.0894841775 * a - 1.2914855480 * b
+    l, m, s = l_ ** 3, m_ ** 3, s_ ** 3
+    r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
+    g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
+    bl = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+    return "#%02x%02x%02x" % tuple(round(_linear_to_srgb(c) * 255) for c in (r, g, bl))
+
+
+def hex_to_oklch(h: str) -> tuple[float, float, float]:
+    r, g, b = (_srgb_to_linear(v / 255) for v in _rgb(h))
+    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_, m_, s_ = l ** (1 / 3), m ** (1 / 3), s ** (1 / 3)
+    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
+    A = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
+    B = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+    return L, math.hypot(A, B), math.degrees(math.atan2(B, A)) % 360
+
+
+def spectrum(u: float) -> str:
+    """Hue 20 at u=0, once round the circle by u=1."""
+    return oklch_to_hex(SPECTRUM_L, SPECTRUM_C, (20 + 360 * u) % 360)
+
+
+def spectrum_stops(n: int = 24) -> list[tuple[float, str]]:
+    return [(i / (n - 1), spectrum(i / (n - 1))) for i in range(n)]
+
+
+# --------------------------------------------------------------------------
+# Two orbits, mirrored through the centre.
+#
+# The redesigned marks are a yin-yang: two copies of one Rossler orbit, the
+# second rotated by pi about the centre, one carrying colour and one ink.
+# Each spiral's centre is an eye, so nothing else is drawn. Every product mark
+# shares this skeleton and changes only the colour orbit's stops -- siblings by
+# construction. See docs/superpowers/specs/2026-09-02-chaos-of-zen-logo-redesign-design.md.
+# --------------------------------------------------------------------------
+HOUSE_SCALE = 0.60
+HOUSE_OFFSET = (9.0, 10.0)     # fixed by test_mark.HouseMark; see spec section 7.4
+HOUSE_ALPHA = 0.76
+HOUSE_W = lambda t: 1.8 + 6.0 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
+WET = dict(bristles=8, dry=.45, wobble=.5)
+
+
+def place(pts, centre, scale: float, rot: float):
+    """Scale a fitted curve about the viewBox centre, rotate it, move it."""
+    out = []
+    c, s = math.cos(rot), math.sin(rot)
+    for x, y in pts:
+        dx, dy = (x - VIEWBOX / 2) * scale, (y - VIEWBOX / 2) * scale
+        out.append((centre[0] + dx * c - dy * s, centre[1] + dx * s + dy * c))
+    return out
+
+
+def two_orbits(t_end: float = 19.0, step: int = 8, scale: float = HOUSE_SCALE,
+               offset=HOUSE_OFFSET, margin: float = 13.0):
+    """(colour_orbit, ink_orbit): one fit, two placements, the second rotated pi."""
+    orbit = fit_one(rossler(t_end=t_end, step=step), margin=margin)
+    cx, cy = VIEWBOX / 2, VIEWBOX / 2
+    colour = place(orbit, (cx - offset[0], cy - offset[1]), scale, 0.0)
+    ink = place(orbit, (cx + offset[0], cy + offset[1]), scale, math.pi)
+    return colour, ink
+
+
+def layered(ink_body: str, colour_body: str, alpha: float = HOUSE_ALPHA) -> str:
+    """Ink underneath at full strength, colour on top at partial alpha.
+
+    Group opacity, not per-path: a stroke is many chunks and per-path alpha
+    would show every chunk seam.
+    """
+    return f'<g>{ink_body}</g><g opacity="{alpha}">{colour_body}</g>'
+
+
+def _ink_layer(inkorb, ink: str = INK_ON_DARK) -> str:
+    """The ink orbit every mark shares -- one definition, so the marks are
+    siblings by construction and test_mark.ProductMarks can assert byte identity."""
+    return brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET)
+
+
+def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
+    colour, inkorb = two_orbits()
+    # spectrum_stops() positions its 24 stops as fractions of CURVE PARAMETER;
+    # brush() also keys colour on curve-parameter fraction, so mapping each
+    # stop through arc_param is what actually spends them along ARC LENGTH,
+    # per spec 2.4. Left unconverted, a spiral's slow inner turns (BUG-3's
+    # skew) soak up most of the ink: hues 20-80 measured 7% against hues
+    # 320-380's 29%, a 0.25 balance (test_mark.test_spectrum_is_spread_by_arc_length).
+    to_param = arc_param(colour)
+    stops = [(to_param(p), c) for p, c in (stops or spectrum_stops())]
+    return layered(_ink_layer(inkorb, ink),
+                   brush(colour, HOUSE_W, stops, seed0=.31, chunk=8, **WET))
+
+
+# --------------------------------------------------------------------------
+# The icon: two outer loops, colour outside over ink inside.
+#
+# Not a taijitu. Shorter integration so only the outer loop survives, flat
+# colour in three bands, no feather (BUG-4: the feather is what breaks a mark
+# at 16 px), no dryness, and each loop emitted as ONE path so no chunk seam
+# shows through the alpha. Fitted with the house margin; ICON_SCALE keeps the
+# stroke on the macOS ground rect (BUG-5), which test_mark.Icon checks.
+# --------------------------------------------------------------------------
+ICON_SCALE = 0.78
+ICON_OFFSET = (4.0, 3.0)
+ICON_LOOP_W = lambda t: 7.0 + 5.0 * math.sin(math.pow(t, .6) * math.pi)
+ICON_BANDS = [spectrum(0.125 * 0.75), spectrum(0.375 * 0.75), spectrum(0.625 * 0.75)]
+
+
+def two_loops():
+    """(colour_loop, ink_loop). The colour loop is the rotated copy, placed
+    at +offset so it sits OUTSIDE the ink loop; the ink loop is unrotated at
+    -offset, inside."""
+    loop = fit_one(rossler(t_end=11.0, step=6), margin=13.0)
+    cx, cy = VIEWBOX / 2, VIEWBOX / 2
+    colour = place(loop, (cx + ICON_OFFSET[0], cy + ICON_OFFSET[1]), ICON_SCALE, math.pi)
+    ink = place(loop, (cx - ICON_OFFSET[0], cy - ICON_OFFSET[1]), ICON_SCALE, 0.0)
+    return colour, ink
+
+
+def _solid(loop, stops) -> str:
+    # bristles=1, dry=0, chunk beyond the point count: one run, one path
+    return brush(loop, ICON_LOOP_W, stops, bristles=1, dry=0.0, wobble=0.0,
+                 chunk=len(loop) + 1)
+
+
+def _bands(loop, colours) -> str:
+    """One path per band, so a band never straddles a colour boundary.
+
+    A band's index range is half-open, [i0, i1), and the next band's i0 is
+    the same i1 -- so two adjacent bands never overlap. Between the last
+    centreline sample one band actually draws and the first sample the next
+    one draws there is a real sliver of arc length that belongs to neither
+    polygon's cap; at 180 px and above it shows through to the ink loop or
+    the ground (test_mark.test_bands_butt_with_no_gap). Every band but the
+    last is extended forward by two samples so the next band -- drawn
+    after, and so painted on top of the overlap -- covers the join."""
+    to_param = arc_param(loop)
+    n = len(colours)
+    paths = []
+    for k, c in enumerate(colours):
+        lo = to_param(k / n)
+        hi = to_param((k + 1) / n)
+        if k < n - 1:
+            hi = min(1.0, hi + 2.0 / len(loop))
+        paths.append(brush(loop, ICON_LOOP_W, [(0, c), (1, c)], bristles=1, dry=0.0,
+                           wobble=0.0, chunk=len(loop) + 1, lo=lo, hi=hi))
+    return ''.join(paths)
+
+
+def icon_body(colour_loop, ink_loop, colours, ink: str) -> str:
+    return layered(_solid(ink_loop, [(0, ink), (1, ink)]), _bands(colour_loop, colours))
+
+
+def house_icon(ink: str = INK_ON_DARK) -> str:
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, ICON_BANDS, ink)
+
+
+# --------------------------------------------------------------------------
 # The brush
 # --------------------------------------------------------------------------
-BREATH = lambda t: 2.4 + 8.8 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
-BREATH_SMALL = lambda t: 4.0 + 9.5 * math.sin(math.pow(t, .8) * math.pi)
-
-
 def brush(pts, width_of, stops, *, bristles: int = 6, dry: float = 0.8,
           wobble: float = 0.55, seed0: float = 0.31,
           lo: float = 0.0, hi: float = 1.0, chunk: int = 6) -> str:
@@ -261,58 +434,17 @@ def brush(pts, width_of, stops, *, bristles: int = 6, dry: float = 0.8,
 # --------------------------------------------------------------------------
 # Assets
 # --------------------------------------------------------------------------
-def reduced_body(ink_emit: str) -> str:
-    """The house mark at reduced fidelity, for anything that renders small.
-
-    Shorter integration (t_end 13.2), three filaments rather than six, and the
-    colour ramp QUANTISED to five flat fills. `ink_emit` is what the ink snaps
-    to -- "currentColor" for the site favicon, a literal for a raster that has
-    to carry its own ink.
-
-    BUG-6: THE QUANTISATION IS A LEGIBILITY MECHANISM, NOT A COMPRESSION ONE.
-    It was introduced to get public/favicon.svg from 33 KB to 4.7 KB and this
-    docstring used to say only that. Measured at 32 px by design/measure_icon.py,
-    the same geometry WITHOUT the snap scores 3 of 4 voices with amber at zero
-    pixels; with it, 4 of 4 and amber at 25. It is doing exactly the job that
-    dropping the feather does for seriatim_icon() -- section 4.5's finding that
-    a voice's ink half and its pigment half average into a midtone that
-    classifies as neither. Flattening each run to the nearest voice is the same
-    remedy applied to a mark that cannot give up its feather, because feathering
-    through all four voices is what the house mark IS (section 4.3).
-
-    So: nothing that renders below about 64 px may take the unquantised ramp.
-    """
-    palette = [INK_ON_LIGHT] + VOICE
-
-    def snap(hexcol: str) -> str:
-        target = _rgb(hexcol)
-        best = min(palette, key=lambda c: sum((a - b) ** 2 for a, b in zip(_rgb(c), target)))
-        return ink_emit if best == INK_ON_LIGHT else best
-
-    stops = [(0, INK_ON_LIGHT), (.30, INK_ON_LIGHT), (.40, TEAL), (.52, TEAL),
-             (.62, SAGE), (.68, SAGE), (.78, AMBER), (.84, AMBER),
-             (.94, VERMILION), (1, VERMILION)]
-    orbit = fit_one(rossler(t_end=13.2, step=24))
-    body = brush(orbit, BREATH_SMALL, stops, bristles=3, dry=.45, wobble=.4, chunk=24)
-    body = re.sub(r'fill="(#[0-9a-f]{6})"', lambda m: f'fill="{snap(m.group(1))}"', body)
-    body = re.sub(r'(\d+)\.\d', r'\1', body)          # integer coordinates
-    return body.replace('/><path', '/>\n  <path')
-
-
 def favicon_svg() -> str:
-    """public/favicon.svg -- reduced fidelity; never renders above 64 px.
+    """public/favicon.svg -- the icon construction; never renders above 64 px.
 
-    The ink is emitted as currentColor so one copy serves both themes, which is
-    why this file can be 4.7 KB and theme-aware at once.
+    Brushed with INK_ON_LIGHT as a sentinel and rewritten to currentColor, so
+    one file serves both themes.
     """
-    body = reduced_body("currentColor")
-
+    body = house_icon(INK_ON_LIGHT).replace(f'fill="{INK_ON_LIGHT}"', 'fill="currentColor"')
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t">
   <title id="t">Chaos of Zen</title>
-  <!-- A Rossler attractor orbit, drawn as a sumi-e stroke that feathers through
-       the four voice colours of seriatim/plugin/Source/ScoreView.cpp:7.
-       Baked at reduced fidelity: this never renders above 64 px. The ink takes
-       currentColor so one copy serves both themes. -->
+  <!-- Two outer loops of a Rossler orbit, mirrored: colour over ink. The ink
+       takes currentColor so one copy serves both themes. -->
   {body}
   <style>
     svg {{ color: {INK_ON_LIGHT}; }}
@@ -320,6 +452,11 @@ def favicon_svg() -> str:
   </style>
 </svg>
 '''
+
+
+def house_icon_svg() -> str:
+    """The macOS icon: the icon construction on the rounded-rect ground."""
+    return _svg(ICON_GROUND + house_icon(INK_ON_DARK), "Chaos of Zen")
 
 
 # --------------------------------------------------------------------------
@@ -344,13 +481,19 @@ VOICE_W = lambda t: 2.6 + 5.4 * math.sin(math.pow(t, .7) * math.pi)
 
 
 def ekphrasis_mark(ink: str = INK_ON_DARK) -> str:
-    orbit = fit_one(rossler())
-    return brush(orbit, IMAGE_W, single_stops(ink, TEAL),
-                 bristles=6, dry=.28, wobble=.45)
+    """One voice reading one image: the colour orbit is ink with a single
+    teal handover, stroke width as image brightness. Same skeleton as the
+    house mark; only the colour orbit's stops and width change."""
+    colour, inkorb = two_orbits()
+    return layered(_ink_layer(inkorb, ink),
+                   brush(colour, IMAGE_W, single_stops(ink, TEAL), bristles=6, dry=.28,
+                         wobble=.45, chunk=8))
 
 
 def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) -> str:
-    """Four voices dividing one orbit, with a rest between each.
+    """Four voices dividing the colour orbit, with a rest between each -- the
+    same arc-length split and per-voice breath as before (BUG-3), now on the
+    shared two-orbit skeleton. The ink orbit is the house mark's.
 
     No two are ever in the same place -- which is Seriatim's real claim, and a
     truer one than chaotic divergence. Divergence was tried and abandoned: at
@@ -366,22 +509,22 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
         taper. One taper across the whole orbit leaves the first and last
         voices in the thin part of the stroke, nearly invisible.
     """
-    orbit = fit_one(rossler(t_end=26.0, step=5))
-    to_param = arc_param(orbit)
+    colour, inkorb = two_orbits()
+    to_param = arc_param(colour)
     span = 1.0 / voices
     out = []
     for k in range(voices):
         lo = to_param(k * span + gap * span)
         hi = to_param((k + 1) * span - gap * span)
-        colour = VOICE[k % len(VOICE)]
+        c = VOICE[k % len(VOICE)]
         a = lo + (hi - lo) * .08
         b = a + max(0.26, .04) * (hi - lo) * 1.2
-        stops = [(0, ink), (a, ink), (min(b, hi), colour), (1, colour)]
-        # each voice gets its own breath across its own window
+        stops = [(0, ink), (a, ink), (min(b, hi), c), (1, c)]
         width = (lambda l, h: lambda t: VOICE_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
-        out.append(brush(orbit, width, stops, bristles=4, dry=.28,
-                         wobble=.26, seed0=SEEDS[k], lo=lo, hi=hi))
-    return ''.join(out)
+        out.append(brush(colour, width, stops, bristles=4, dry=.28, wobble=.26,
+                         seed0=SEEDS[k], lo=lo, hi=hi, chunk=8))
+    return layered(_ink_layer(inkorb, ink),
+                   ''.join(out))
 
 
 # Icon construction. The same orbit, the same brush, the same arc-length voice
@@ -401,7 +544,6 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
 # pigment half average into a single midtone that classifies as neither. The
 # handover is what makes the mark look wet at 512 px and is exactly what
 # destroys it at 16.
-ICON_W = lambda t: 14.0 + 8.0 * math.sin(math.pow(t, .7) * math.pi)
 
 # macOS icon grid: the rounded rect occupies 824 of 1024, i.e. 103 of 128, with
 # a corner radius of 185.4/1024 -> 23.2/128. Without a ground the icon is
@@ -424,24 +566,94 @@ ICON_GROUND = ('<rect x="12.5" y="12.5" width="103" height="103" '
 # Refitting cost nothing: t_end 11.0 with a 14-22 stroke and a 0.14 gap
 # measures 4 of 4 at a balance of 1.00, fully contained -- better than the
 # escaped version on its own metric.
+#
+# The two-loop icon keeps the stroke on the ground through ICON_SCALE, checked
+# by test_mark.Icon.
 
 
-def seriatim_icon(voices: int = 4, gap: float = 0.14) -> str:
-    """Seriatim's mark reduced for bundle icons -- see BUG-4 and BUG-5 above."""
-    orbit = fit_one(rossler(t_end=11.0, step=5), margin=30.0)
-    to_param = arc_param(orbit)
-    span = 1.0 / voices
-    out = [ICON_GROUND]
-    for k in range(voices):
-        lo = to_param(k * span + gap * span)
-        hi = to_param((k + 1) * span - gap * span)
-        colour = VOICE[k % len(VOICE)]
-        stops = [(0, colour), (1, colour)]      # solid: no ink handover
-        width = (lambda l, h: lambda t:
-                 ICON_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
-        out.append(brush(orbit, width, stops, bristles=2, dry=0.0,
-                         wobble=0.0, seed0=SEEDS[k], lo=lo, hi=hi))
-    return ''.join(out)
+def seriatim_icon(ink: str = INK_ON_DARK) -> str:
+    """Seriatim's icon: the two loops, the colour loop in four flat voice bands."""
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, VOICE, ink)
+
+
+def ekphrasis_icon(ink: str = INK_ON_DARK) -> str:
+    """Ekphrasis's icon: the colour loop is ink with one teal band at the end."""
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, [ink, ink, TEAL], ink)
+
+
+# --------------------------------------------------------------------------
+# The strings and cloud field.
+#
+# A background layer for the site hero, the store header and the social card;
+# never part of an icon or a mark file. Vertical strings at positions from the
+# coprime periods Seriatim uses, so the pattern of gaps does not repeat inside
+# the field -- the same argument the instrument makes. Four strings take the
+# voice colours where the colour orbit's arc-length quarters sit. The cloud is
+# the mark's own stroke continued past its edge as dry brush.
+# --------------------------------------------------------------------------
+STRING_PERIODS = (5, 7, 11, 13)
+STRING_GRID = 4
+MUTED_ON_DARK = "#8b8b9e"
+
+
+def string_positions(width: int) -> list[int]:
+    xs = set()
+    for p in STRING_PERIODS:
+        for i in range(width // (STRING_GRID * p) + 1):
+            xs.add((STRING_GRID * i * p) % width)
+    return sorted(xs)
+
+
+def voice_string_xs() -> list[float]:
+    """x-centroids, in mark coordinates, of the colour orbit's four arc-length quarters."""
+    colour, _ = two_orbits()
+    to_param = arc_param(colour)
+    n = len(colour)
+    out = []
+    for k in range(4):
+        i0, i1 = int(to_param(k / 4) * (n - 1)), int(to_param((k + 1) / 4) * (n - 1))
+        seg = colour[i0:i1] or colour[i0:i0 + 1]
+        out.append(sum(p[0] for p in seg) / len(seg))
+    return out
+
+
+def strings_field_svg(width: int, height: int, mark_px: float,
+                      ink: str = INK_ON_DARK, muted: str = MUTED_ON_DARK) -> str:
+    """The strings only, as an SVG fragment in field coordinates. The mark is
+    assumed centred with side mark_px, which is where the voice strings land."""
+    lines = [f'<line x1="{x}" y1="0" x2="{x}" y2="{height}" stroke="{muted}" '
+             f'stroke-opacity="0.06" stroke-width="1"/>' for x in string_positions(width)]
+    s = mark_px / VIEWBOX
+    x0 = (width - mark_px) / 2
+    for vx, colour in zip(voice_string_xs(), VOICE):
+        x = x0 + vx * s
+        lines.append(f'<line x1="{x:.1f}" y1="0" x2="{x:.1f}" y2="{height}" '
+                     f'stroke="{colour}" stroke-width="1"/>')
+    return ''.join(lines)
+
+
+def cloud_svg(ink: str = INK_ON_DARK) -> str:
+    """The two orbits again, larger and drier, ink only, at 12 %."""
+    colour, inkorb = two_orbits(scale=HOUSE_SCALE * 1.35)
+    body = (brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], bristles=8, dry=.9, wobble=.8,
+                  seed0=.58, chunk=8)
+            + brush(colour, HOUSE_W, [(0, ink), (1, ink)], bristles=8, dry=.9, wobble=.8,
+                    seed0=.31, chunk=8))
+    return f'<g opacity="0.12">{body}</g>'
+
+
+def hero_field_svg(width: int = 1200, height: int = 630) -> str:
+    mark_px = height * 0.8
+    s = mark_px / VIEWBOX
+    x0, y0 = (width - mark_px) / 2, (height - mark_px) / 2
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+            f'width="{width}" height="{height}" role="img" aria-label="Chaos of Zen">\n'
+            f'  <rect width="{width}" height="{height}" fill="{GROUND_SCORE}"/>\n'
+            f'  {strings_field_svg(width, height, mark_px)}\n'
+            f'  <g transform="translate({x0:.2f} {y0:.2f}) scale({s:.6f})">{cloud_svg()}{house_body()}</g>\n'
+            f'</svg>\n')
 
 
 def _svg(body: str, label: str) -> str:
@@ -450,9 +662,7 @@ def _svg(body: str, label: str) -> str:
 
 
 def house_mark_svg() -> str:
-    orbit = fit_one(rossler())
-    return _svg(brush(orbit, BREATH, house_stops(INK_ON_DARK, .10), bristles=6, dry=.8),
-                "Chaos of Zen")
+    return _svg(house_body(), "Chaos of Zen")
 
 
 def ekphrasis_mark_svg() -> str:
@@ -464,7 +674,11 @@ def seriatim_mark_svg() -> str:
 
 
 def seriatim_icon_svg() -> str:
-    return _svg(seriatim_icon(), "Seriatim")
+    return _svg(ICON_GROUND + seriatim_icon(), "Seriatim")
+
+
+def ekphrasis_icon_svg() -> str:
+    return _svg(ICON_GROUND + ekphrasis_icon(), "Ekphrasis")
 
 
 # --------------------------------------------------------------------------
@@ -497,29 +711,15 @@ STORE_GROUND = '<rect x="0" y="0" width="128" height="128" fill="#0e0e14"/>'
 def store_logo_svg() -> str:
     """The merchant avatar. Rasterised to 320 px; see design/README.md.
 
-    The full-fidelity house mark, ink baked to #eceaf2 rather than left as
-    currentColor. Nothing about the geometry is reduced -- at 320 px the brush
-    and the feather are the whole point, and they are what section 4.5 found
-    are destroyed only down at icon sizes.
+    The full house mark, ink baked to #eceaf2, on the opaque store ground.
     """
-    orbit = fit_one(rossler())
-    body = brush(orbit, BREATH, house_stops(INK_ON_DARK, .10), bristles=6, dry=.8)
-    return _svg(STORE_GROUND + body, "Chaos of Zen")
+    return _svg(STORE_GROUND + house_body(INK_ON_DARK), "Chaos of Zen")
 
 
 def store_favicon_svg() -> str:
-    """The storefront tab icon. Rasterised to 32 px.
-
-    reduced_body() -- the same construction the site favicon uses -- with the
-    ink baked to #eceaf2 and an opaque ground, because neither of
-    favicon_svg()'s two tricks (currentColor, a theme-switching <style> block)
-    survives being uploaded to a third party as a flat PNG.
-
-    Measured at 32 px: 4 of 4 voices. The full mark scores 2 of 4 there and
-    this construction WITHOUT reduced_body()'s quantisation scores 3 of 4 --
-    see BUG-6 and spec.md section 7.4.
-    """
-    return _svg(STORE_GROUND + reduced_body(INK_ON_DARK), "Chaos of Zen")
+    """The storefront tab icon. Rasterised to 32 px. The icon construction,
+    ink baked, on the opaque store ground."""
+    return _svg(STORE_GROUND + house_icon(INK_ON_DARK), "Chaos of Zen")
 
 
 def store_product_svg() -> str:
@@ -541,9 +741,12 @@ def store_product_svg() -> str:
 ASSETS = {
     "public/favicon.svg": favicon_svg,
     "public/marks/chaos-of-zen.svg": house_mark_svg,
+    "public/marks/chaos-of-zen-icon.svg": house_icon_svg,
     "public/marks/ekphrasis.svg": ekphrasis_mark_svg,
+    "public/marks/ekphrasis-icon.svg": ekphrasis_icon_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
+    "public/marks/field.svg": hero_field_svg,
     "design/store/logo.svg": store_logo_svg,
     "design/store/favicon.svg": store_favicon_svg,
     "design/store/product-seriatim.svg": store_product_svg,

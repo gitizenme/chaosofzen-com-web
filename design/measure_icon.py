@@ -27,6 +27,7 @@ and Pillow, neither of which mark.py depends on -- run it by hand, not in CI.
     python3 design/measure_icon.py --size 32 design/store/favicon.svg
     python3 design/measure_icon.py --size 320 --circle design/store/logo.svg
 """
+import re
 import subprocess
 import sys
 import tempfile
@@ -42,6 +43,25 @@ VOICES = {
     "amber": (0xf3, 0xa7, 0x12),
     "sage": (0xa8, 0xc6, 0x86),
 }
+
+
+# Fills that are ground or ink, not a colour band -- shared by bands_from_svg
+# (which colours a mark carries) and layer_alpha (which group carries them).
+NON_BAND_FILLS = ("#0e0e14", "#eceaf2", "#12121a")
+
+
+def bands_from_svg(svg_text: str) -> dict[str, tuple[int, int, int]]:
+    """The colours a mark actually carries: every fill that is neither the
+    ground nor the ink, in order of first appearance, named band1, band2..."""
+    seen, out = [], {}
+    for h in re.findall(r'fill="(#[0-9a-f]{6})"', svg_text):
+        if h in seen or h in NON_BAND_FILLS:
+            continue
+        seen.append(h)
+        out[f"band{len(seen)}"] = tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+    return out
+
+
 # A pixel counts as a voice only if it is within this RGB distance of it.
 # 60 is wide enough to admit antialiased edges and narrow enough to reject
 # the ink/pigment midtone the feather produces at small sizes.
@@ -63,6 +83,37 @@ GROUND_RE = (r'<rect\b(?=[^>]*' + GROUND_FILL + r')[^>]*?'
 
 def dist(a, b):
     return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
+
+
+def layer_alpha(svg_text: str) -> float:
+    """The opacity of the group that actually carries the colour bands --
+    not just any group's opacity. An asset can carry more than one <g
+    opacity="..."> block at different strengths (field.svg layers an
+    ink-only cloud at 0.12 UNDER the 0.76 colour loop); taking the minimum
+    across all of them would composite the bands at the cloud's alpha
+    instead of their own. So: walk the top-level <g ...>...</g> blocks in
+    order, and for each, read a plain `opacity` attribute (the lookbehind
+    excludes `fill-opacity`/`stroke-opacity`, which also end in "opacity"
+    but are a different thing) and check whether its body carries any fill
+    that is not ground or ink (NON_BAND_FILLS, the same set bands_from_svg
+    excludes) -- i.e. whether this is the group actually painting the
+    bands. The first such group's opacity wins; if it has no opacity
+    attribute at all, or no group carries a band fill, the asset is
+    unlayered and this returns 1.0 (no compositing). Assumes the band-
+    carrying group is not itself nested inside another group with its own
+    opacity -- a doubly-nested opacity would need multiplying, which this
+    walk (first match wins) does not do."""
+    for m in re.finditer(r'<g\b([^>]*)>(.*?)</g>', svg_text, re.S):
+        attrs, body = m.groups()
+        fills = set(re.findall(r'fill="(#[0-9a-f]{6})"', body))
+        if fills - set(NON_BAND_FILLS):
+            op = re.search(r'(?<![\w-])opacity="([\d.]+)"', attrs)
+            return float(op.group(1)) if op else 1.0
+    return 1.0
+
+
+def composite(colour, ground, alpha):
+    return tuple(round(alpha * c + (1 - alpha) * g) for c, g in zip(colour, ground))
 
 
 def render(svg_text: str, png: Path, size: int, background: str | None = None):
@@ -88,7 +139,6 @@ def escaped_fraction(svg_text: str, tmp: Path, size: int = 256,
     of defect against a circle would look identical from here, so it gets the
     same measurement rather than an assumption.
     """
-    import re
     m = re.search(GROUND_RE, svg_text)
     if m is None:
         return None
@@ -114,15 +164,26 @@ def escaped_fraction(svg_text: str, tmp: Path, size: int = 256,
     return (outside / total) if total else 0.0
 
 
-def measure(svg: Path, size: int = 16, circle: bool = False):
+def measure(svg: Path, size: int = 16, circle: bool = False, bands=None):
     svg_text = svg.read_text()
+    palette = bands if bands is not None else VOICES
+    # The colour layer is composited at the group's opacity over the ground,
+    # so a pure voice value is never on screen: what renders is
+    # alpha*colour + (1-alpha)*ground. Classify against that composited
+    # colour, not the source value, or a band sitting close to THRESHOLD's
+    # edge reads as unreadable when it is only unreadable to the wrong
+    # reference colour. The ink loop sits outside the opacity group (it is
+    # UNDER the colour layer, not inside it) so it stays at full strength.
+    alpha = layer_alpha(svg_text)
+    expected = {name: composite(colour, GROUND, alpha)
+                for name, colour in palette.items()}
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
         png = tmp / "out.png"
         render(svg_text, png, size, background="#0e0e14")
         escaped = escaped_fraction(svg_text, tmp, circle=circle)
         im = Image.open(png).convert("RGB")
-        counts = {k: 0 for k in VOICES}
+        counts = {k: 0 for k in palette}
         lit = 0
         # Pillow 12 renamed getdata() to get_flattened_data(); accept either so
         # this keeps running on whichever the machine happens to have.
@@ -133,7 +194,7 @@ def measure(svg: Path, size: int = 16, circle: bool = False):
                 continue
             lit += 1
             best, best_d = None, 1e9
-            for name, colour in list(VOICES.items()) + [("ink", INK)]:
+            for name, colour in list(expected.items()) + [("ink", INK)]:
                 d = dist(px, colour)
                 if d < best_d:
                     best, best_d = name, d
@@ -146,6 +207,7 @@ def measure(svg: Path, size: int = 16, circle: bool = False):
         "readable": sum(1 for v in counts.values() if v >= MIN_PIXELS),
         "balance": (values[0] / values[-1]) if values[-1] else 0.0,
         "coverage": lit / (size * size),
+        "alpha": alpha,
     }
 
 
@@ -159,6 +221,10 @@ def main(argv):
     ap.add_argument("--circle", action="store_true",
                     help="measure containment against the inscribed circle "
                          "rather than the macOS rounded rect")
+    ap.add_argument("--bands", action="store_true",
+                    help="classify against the colours the asset carries, not the four "
+                         "voices -- meant for icons; a full mark yields hundreds of "
+                         "distinct fills, not a handful of bands")
     args = ap.parse_args(argv[1:])
     if not args.assets:
         ap.print_help()
@@ -167,10 +233,12 @@ def main(argv):
           f"{'escaped':>8s}")
     failed = False
     for arg in args.assets:
-        r = measure(Path(arg), size=args.size, circle=args.circle)
+        path = Path(arg)
+        bands = bands_from_svg(path.read_text()) if args.bands else None
+        r = measure(path, size=args.size, circle=args.circle, bands=bands)
         esc = "n/a" if r["escaped"] is None else f"{r['escaped'] * 100:.1f}%"
-        print(f"{arg:34s} {r['readable']:>4d}/4 {r['balance']:>8.2f} "
-              f"{r['coverage'] * 100:>8.1f}% {esc:>8s}")
+        print(f"{arg:34s} {r['readable']:>3d}/{len(r['counts']):d} {r['balance']:>8.2f} "
+              f"{r['coverage'] * 100:>8.1f}% {esc:>8s}  alpha {r['alpha']:.2f}")
         print(f"{'':34s} {r['counts']}")
         # Ink outside the ground is a defect, not a note: it puts part of the
         # mark on the desktop. Anything above a rounding error fails.
