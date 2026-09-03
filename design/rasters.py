@@ -16,16 +16,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC, STORE, MARKS = ROOT / "public", ROOT / "design/store", ROOT / "public/marks"
 
-# (source svg, output png, size, background or None for transparent)
+# (source svg, output png, size)
 RASTERS = [
-    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-16.png", 16, None),
-    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-32.png", 32, None),
-    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-48.png", 48, None),
-    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-512.png", 512, None),
-    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "apple-touch-icon.png", 180, None),
-    (STORE / "logo.svg", STORE / "logo-320.png", 320, None),
-    (STORE / "favicon.svg", STORE / "favicon-32.png", 32, None),
-    (STORE / "product-seriatim.svg", STORE / "product-seriatim-1024.png", 1024, None),
+    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-16.png", 16),
+    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-32.png", 32),
+    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-48.png", 48),
+    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "icon-512.png", 512),
+    (MARKS / "chaos-of-zen-icon.svg", PUBLIC / "apple-touch-icon.png", 180),
+    (STORE / "logo.svg", STORE / "logo-320.png", 320),
+    (STORE / "favicon.svg", STORE / "favicon-32.png", 32),
+    (STORE / "product-seriatim.svg", STORE / "product-seriatim-1024.png", 1024),
 ]
 
 
@@ -51,7 +51,7 @@ def ico(pngs: list[Path], out: Path) -> None:
 
 
 def main() -> int:
-    for svg, png, size, _ in RASTERS:
+    for svg, png, size in RASTERS:
         inkscape(svg, png, size)
     ico([PUBLIC / "icon-16.png", PUBLIC / "icon-32.png", PUBLIC / "icon-48.png"],
         PUBLIC / "favicon.ico")
