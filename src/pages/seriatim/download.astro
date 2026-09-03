@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
 import { SUGGESTED_PRICE_CENTS } from '../../lib/store';
+import { PRODUCTS } from '../../lib/products';
 
 const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
 ---
@@ -32,7 +33,7 @@ const suggested = (SUGGESTED_PRICE_CENTS / 100).toFixed(0);
     <button type="submit" data-testid="download-button">Download for macOS</button>
   </form>
 
-  <VersionBadge />
+  <VersionBadge manifestUrl={PRODUCTS.seriatim.manifestUrl} />
 
   <p><a href="/seriatim/manual">Installation guide</a> · <a href="/eula">Licence</a></p>
 </Base>
