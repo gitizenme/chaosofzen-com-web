@@ -44,7 +44,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm astro check
       - run: pnpm vitest run
-      - run: pnpm build
+      # `pnpm build` is `check-products.mjs && astro build`, and that guard is a
+      # SHIPPING gate: it refuses while a product's variantId is still the
+      # placeholder, because a checkout wired to a product that does not exist
+      # takes money and delivers nothing. Running it here would make every PR
+      # red until gitizenme/ekphrasis#28 lands -- red for a reason unrelated to
+      # the change under review, which is how a suite gets ignored.
+      #
+      # Nothing is lost by building unguarded here. The gate still stands where
+      # it matters: wrangler.jsonc's build.command is `pnpm build`, so a deploy
+      # runs the guard and refuses on its own. And the guard's own behaviour is
+      # asserted by scripts/check-products.test.ts, which `pnpm vitest run`
+      # above executes -- including that the script exits non-zero and names
+      # the blocking issue.
+      - run: pnpm astro build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test
 
