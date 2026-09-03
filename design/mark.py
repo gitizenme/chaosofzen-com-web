@@ -466,13 +466,19 @@ VOICE_W = lambda t: 2.6 + 5.4 * math.sin(math.pow(t, .7) * math.pi)
 
 
 def ekphrasis_mark(ink: str = INK_ON_DARK) -> str:
-    orbit = fit_one(rossler())
-    return brush(orbit, IMAGE_W, single_stops(ink, TEAL),
-                 bristles=6, dry=.28, wobble=.45)
+    """One voice reading one image: the colour orbit is ink with a single
+    teal handover, stroke width as image brightness. Same skeleton as the
+    house mark; only the colour orbit's stops and width change."""
+    colour, inkorb = two_orbits()
+    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+                   brush(colour, IMAGE_W, single_stops(ink, TEAL), bristles=6, dry=.28,
+                         wobble=.45, chunk=8))
 
 
 def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) -> str:
-    """Four voices dividing one orbit, with a rest between each.
+    """Four voices dividing the colour orbit, with a rest between each -- the
+    same arc-length split and per-voice breath as before (BUG-3), now on the
+    shared two-orbit skeleton. The ink orbit is the house mark's.
 
     No two are ever in the same place -- which is Seriatim's real claim, and a
     truer one than chaotic divergence. Divergence was tried and abandoned: at
@@ -488,22 +494,22 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
         taper. One taper across the whole orbit leaves the first and last
         voices in the thin part of the stroke, nearly invisible.
     """
-    orbit = fit_one(rossler(t_end=26.0, step=5))
-    to_param = arc_param(orbit)
+    colour, inkorb = two_orbits()
+    to_param = arc_param(colour)
     span = 1.0 / voices
     out = []
     for k in range(voices):
         lo = to_param(k * span + gap * span)
         hi = to_param((k + 1) * span - gap * span)
-        colour = VOICE[k % len(VOICE)]
+        c = VOICE[k % len(VOICE)]
         a = lo + (hi - lo) * .08
         b = a + max(0.26, .04) * (hi - lo) * 1.2
-        stops = [(0, ink), (a, ink), (min(b, hi), colour), (1, colour)]
-        # each voice gets its own breath across its own window
+        stops = [(0, ink), (a, ink), (min(b, hi), c), (1, c)]
         width = (lambda l, h: lambda t: VOICE_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
-        out.append(brush(orbit, width, stops, bristles=4, dry=.28,
-                         wobble=.26, seed0=SEEDS[k], lo=lo, hi=hi))
-    return ''.join(out)
+        out.append(brush(colour, width, stops, bristles=4, dry=.28, wobble=.26,
+                         seed0=SEEDS[k], lo=lo, hi=hi, chunk=8))
+    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+                   ''.join(out))
 
 
 # Icon construction. The same orbit, the same brush, the same arc-length voice
@@ -523,7 +529,6 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
 # pigment half average into a single midtone that classifies as neither. The
 # handover is what makes the mark look wet at 512 px and is exactly what
 # destroys it at 16.
-ICON_W = lambda t: 14.0 + 8.0 * math.sin(math.pow(t, .7) * math.pi)
 
 # macOS icon grid: the rounded rect occupies 824 of 1024, i.e. 103 of 128, with
 # a corner radius of 185.4/1024 -> 23.2/128. Without a ground the icon is
@@ -546,24 +551,21 @@ ICON_GROUND = ('<rect x="12.5" y="12.5" width="103" height="103" '
 # Refitting cost nothing: t_end 11.0 with a 14-22 stroke and a 0.14 gap
 # measures 4 of 4 at a balance of 1.00, fully contained -- better than the
 # escaped version on its own metric.
+#
+# The two-loop icon keeps the stroke on the ground through ICON_SCALE, checked
+# by test_mark.Icon.
 
 
-def seriatim_icon(voices: int = 4, gap: float = 0.14) -> str:
-    """Seriatim's mark reduced for bundle icons -- see BUG-4 and BUG-5 above."""
-    orbit = fit_one(rossler(t_end=11.0, step=5), margin=30.0)
-    to_param = arc_param(orbit)
-    span = 1.0 / voices
-    out = [ICON_GROUND]
-    for k in range(voices):
-        lo = to_param(k * span + gap * span)
-        hi = to_param((k + 1) * span - gap * span)
-        colour = VOICE[k % len(VOICE)]
-        stops = [(0, colour), (1, colour)]      # solid: no ink handover
-        width = (lambda l, h: lambda t:
-                 ICON_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
-        out.append(brush(orbit, width, stops, bristles=2, dry=0.0,
-                         wobble=0.0, seed0=SEEDS[k], lo=lo, hi=hi))
-    return ''.join(out)
+def seriatim_icon(ink: str = INK_ON_DARK) -> str:
+    """Seriatim's icon: the two loops, the colour loop in four flat voice bands."""
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, VOICE, ink)
+
+
+def ekphrasis_icon(ink: str = INK_ON_DARK) -> str:
+    """Ekphrasis's icon: the colour loop is ink with one teal band at the end."""
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, [ink, ink, TEAL], ink)
 
 
 def _svg(body: str, label: str) -> str:
@@ -584,7 +586,11 @@ def seriatim_mark_svg() -> str:
 
 
 def seriatim_icon_svg() -> str:
-    return _svg(seriatim_icon(), "Seriatim")
+    return _svg(ICON_GROUND + seriatim_icon(), "Seriatim")
+
+
+def ekphrasis_icon_svg() -> str:
+    return _svg(ICON_GROUND + ekphrasis_icon(), "Ekphrasis")
 
 
 # --------------------------------------------------------------------------
@@ -649,6 +655,7 @@ ASSETS = {
     "public/marks/chaos-of-zen.svg": house_mark_svg,
     "public/marks/chaos-of-zen-icon.svg": house_icon_svg,
     "public/marks/ekphrasis.svg": ekphrasis_mark_svg,
+    "public/marks/ekphrasis-icon.svg": ekphrasis_icon_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
     "design/store/logo.svg": store_logo_svg,

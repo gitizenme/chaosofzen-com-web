@@ -143,5 +143,49 @@ class Icon(unittest.TestCase):
         self.assertIn(mark.ICON_GROUND, mark.house_icon_svg())
 
 
+class ProductMarks(unittest.TestCase):
+    def colour_fills(self, body):
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", body, re.S)[1]
+        return set(re.findall(r'fill="(#[0-9a-f]{6})"', colour))
+
+    def test_seriatim_colour_orbit_is_the_four_voices(self):
+        fills = self.colour_fills(mark.seriatim_mark())
+        for v in mark.VOICE:
+            self.assertIn(v, fills)
+        # the handover feathers ink->voice, so ink and mixes are allowed;
+        # nothing from the spectrum sweep is
+        self.assertNotIn(mark.spectrum(0.5), fills)
+
+    def test_ekphrasis_colour_orbit_is_ink_and_teal_only(self):
+        fills = self.colour_fills(mark.ekphrasis_mark())
+        self.assertIn(mark.TEAL, fills)
+        ink, teal = mark._rgb(mark.INK_ON_DARK), mark._rgb(mark.TEAL)
+        for f in fills:
+            rgb = mark._rgb(f)
+            # every fill lies on the straight ink->teal segment: the mix
+            # parameter recovered from each channel agrees within 2/255
+            ts = [(rgb[i] - ink[i]) / (teal[i] - ink[i]) for i in range(3) if teal[i] != ink[i]]
+            self.assertLessEqual(max(ts) - min(ts), 2 / min(abs(teal[i] - ink[i]) for i in range(3) if teal[i] != ink[i]), f)
+            self.assertTrue(-0.02 <= min(ts) and max(ts) <= 1.02, f)
+
+    def test_all_three_marks_share_the_skeleton(self):
+        # identical ink orbit in every mark: the first <g> is byte-identical
+        ink = lambda b: re.findall(r"<g[^>]*>(.*?)</g>", b, re.S)[0]
+        self.assertEqual(ink(mark.house_body()), ink(mark.seriatim_mark()))
+        self.assertEqual(ink(mark.house_body()), ink(mark.ekphrasis_mark()))
+
+    def test_seriatim_icon_has_four_flat_bands_on_the_ground(self):
+        svg = mark.seriatim_icon_svg()
+        self.assertIn(mark.ICON_GROUND, svg)
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", svg, re.S)[1]
+        self.assertEqual(re.findall(r'fill="(#[0-9a-f]{6})"', colour), mark.VOICE)
+
+    def test_ekphrasis_icon_is_ink_with_one_teal_band(self):
+        svg = mark.ekphrasis_icon_svg()
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", svg, re.S)[1]
+        fills = re.findall(r'fill="(#[0-9a-f]{6})"', colour)
+        self.assertEqual(fills, [mark.INK_ON_DARK, mark.INK_ON_DARK, mark.TEAL])
+
+
 if __name__ == "__main__":
     unittest.main()
