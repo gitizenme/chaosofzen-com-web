@@ -45,12 +45,17 @@ VOICES = {
 }
 
 
+# Fills that are ground or ink, not a colour band -- shared by bands_from_svg
+# (which colours a mark carries) and layer_alpha (which group carries them).
+NON_BAND_FILLS = ("#0e0e14", "#eceaf2", "#12121a")
+
+
 def bands_from_svg(svg_text: str) -> dict[str, tuple[int, int, int]]:
     """The colours a mark actually carries: every fill that is neither the
     ground nor the ink, in order of first appearance, named band1, band2..."""
     seen, out = [], {}
     for h in re.findall(r'fill="(#[0-9a-f]{6})"', svg_text):
-        if h in seen or h in ("#0e0e14", "#eceaf2", "#12121a"):
+        if h in seen or h in NON_BAND_FILLS:
             continue
         seen.append(h)
         out[f"band{len(seen)}"] = tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
@@ -81,11 +86,27 @@ def dist(a, b):
 
 
 def layer_alpha(svg_text: str) -> float:
-    """The colour loop is drawn in a <g opacity="..."> group over the ground,
-    so the smallest group opacity in the asset is what actually reaches the
-    screen. 1.0 (no compositing) if the asset carries no opacity group."""
-    values = [float(v) for v in re.findall(r'<g[^>]*\bopacity="([\d.]+)"', svg_text)]
-    return min(values) if values else 1.0
+    """The opacity of the group that actually carries the colour bands --
+    not just any group's opacity. An asset can carry more than one <g
+    opacity="..."> block at different strengths (field.svg layers an
+    ink-only cloud at 0.12 UNDER the 0.76 colour loop); taking the minimum
+    across all of them would composite the bands at the cloud's alpha
+    instead of their own. So: walk the top-level <g ...>...</g> blocks in
+    order, and for each, read a plain `opacity` attribute (the lookbehind
+    excludes `fill-opacity`/`stroke-opacity`, which also end in "opacity"
+    but are a different thing) and check whether its body carries any fill
+    that is not ground or ink (NON_BAND_FILLS, the same set bands_from_svg
+    excludes) -- i.e. whether this is the group actually painting the
+    bands. The first such group's opacity wins; if it has no opacity
+    attribute at all, or no group carries a band fill, the asset is
+    unlayered and this returns 1.0 (no compositing)."""
+    for m in re.finditer(r'<g\b([^>]*)>(.*?)</g>', svg_text, re.S):
+        attrs, body = m.groups()
+        fills = set(re.findall(r'fill="(#[0-9a-f]{6})"', body))
+        if fills - set(NON_BAND_FILLS):
+            op = re.search(r'(?<![\w-])opacity="([\d.]+)"', attrs)
+            return float(op.group(1)) if op else 1.0
+    return 1.0
 
 
 def composite(colour, ground, alpha):
