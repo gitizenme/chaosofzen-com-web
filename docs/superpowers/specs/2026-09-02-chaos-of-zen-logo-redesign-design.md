@@ -183,7 +183,7 @@ The field is static SVG. On the site it is decorative (`aria-hidden`), honours `
 
 - **Face:** Literata weight 300, shaped by HarfBuzz and **outlined** by the existing `design/header.py`, so no font is embedded.
 - **Horizontal lockup** (site header, installer, DMG): mark height = 2.2 × the wordmark's cap height; gap between mark and wordmark = 0.5 × mark height; baseline of the wordmark at the mark's vertical centre + 0.35 × cap height.
-- **Stacked lockup** (store header, 1600×300): mark centred above the wordmark, gap 0.4 × mark height, the whole lockup centred on `#0e0e14`; the empty sides are the design, per `spec.md` §7.4. Mark height 3.2 × cap height (`MARK_PER_CAP_STACKED`), not the horizontal lockup's 2.2 — the 2.2 ratio read as noise at 300 px.
+- **Stacked lockup** (store header, 1600×300): mark centred above the wordmark, gap 0.4 × mark height, the whole lockup centred on `#0e0e14`; the empty sides are the design, per `spec.md` §7.4. Mark height 3.2 × cap height (`MARK_PER_CAP_STACKED`) — not the horizontal lockup's 2.2, which read as noise at 300 px — but that ratio is a **ceiling, not a promise**: the lockup is fitted to the 300 px banner height with a 16 px margin top and bottom, so at the wordmark's actual cap height the mark is scaled down from the 3.2 ceiling to whatever fits without clipping the wordmark's descenders.
 - **Site nav** keeps the 22 px icon (§3) plus the wordmark in Source Sans 3 600 as today; the Literata lockup is for the hero, the store and installers.
 
 ---

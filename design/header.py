@@ -46,9 +46,11 @@ WORDMARK = "Chaos of Zen"
 WEIGHT = 300           # matches global.css h1/h2/h3
 TYPE_PX = 78.0
 MARK_PER_CAP = 2.2            # horizontal lockup: mark height / wordmark cap height
-MARK_PER_CAP_STACKED = 3.2    # stacked lockup: the 2.2 ratio read as noise at 300 px
+MARK_PER_CAP_STACKED = 3.2    # stacked lockup ceiling: the 2.2 ratio read as noise at
+                               # 300px, but the ceiling is not always a promise -- PAD below
 GAP_PER_MARK = 0.5     # horizontal gap, as a fraction of mark height
 STACK_GAP_PER_MARK = 0.4
+PAD = 16.0              # stacked lockup: px of breathing room top and bottom
 
 
 def literata(fonts_dir: Path) -> Path:
@@ -120,7 +122,12 @@ def _toBytes(ft) -> bytes:
 
 def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
     d, tw, cap = wordmark_path(literata(fonts_dir), WORDMARK, TYPE_PX)
-    mark_px = (MARK_PER_CAP_STACKED if stacked else MARK_PER_CAP) * cap
+    if stacked:
+        # The stack is fitted to the banner: the ratio is a ceiling, not a promise.
+        mark_px = min(MARK_PER_CAP_STACKED * cap,
+                      (H - 2 * PAD - 1.35 * cap) / (1 + STACK_GAP_PER_MARK))
+    else:
+        mark_px = MARK_PER_CAP * cap
     # The mark is mark.py's house mark, unmodified, scaled off its 128 viewBox.
     body = mark.house_body()
     s = mark_px / mark.VIEWBOX
@@ -129,7 +136,7 @@ def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
         gap = STACK_GAP_PER_MARK * mark_px
         total_h = mark_px + gap + cap
         mark_x = (W - mark_px) / 2.0
-        mark_y = (H - total_h) / 2.0
+        mark_y = (H - total_h - 0.35 * cap) / 2.0
         text_x = (W - tw) / 2.0
         text_y = mark_y + mark_px + gap + cap
     else:
