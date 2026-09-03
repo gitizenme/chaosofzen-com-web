@@ -6,7 +6,45 @@
 // cannot be produced while a value that would harm someone is unresolved.
 
 import { pathToFileURL } from 'node:url';
-import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from '../src/lib/products.ts';
+
+// This script imports src/lib/products.ts directly -- there is no build step
+// between this file and that one -- and relies on node's built-in TypeScript
+// type-stripping to load it. That became unflagged (no
+// --experimental-strip-types needed) only from node 22.18.0; package.json's
+// "engines.node" requires that version for exactly this reason.
+//
+// Below that version, a *static* `import ... from '../src/lib/products.ts'`
+// throws ERR_UNKNOWN_FILE_EXTENSION during module linking -- before any code
+// in this file runs, a version check included, because ES module linking
+// resolves the whole static-import graph before evaluation starts. So the
+// check below has to run before a *dynamic* import() instead: dynamic
+// import() is an ordinary expression evaluated in program order, which lets
+// us fail with a sentence instead of a stack trace.
+const MIN_NODE_FOR_TS_IMPORT = [22, 18, 0];
+
+function nodeSupportsTsImport(versionString) {
+  const have = versionString.split('.').map(Number);
+  for (let i = 0; i < MIN_NODE_FOR_TS_IMPORT.length; i++) {
+    const part = have[i] ?? 0;
+    const need = MIN_NODE_FOR_TS_IMPORT[i];
+    if (part > need) return true;
+    if (part < need) return false;
+  }
+  return true;
+}
+
+if (!nodeSupportsTsImport(process.versions.node)) {
+  console.error(
+    `error: this build guard needs node >=${MIN_NODE_FOR_TS_IMPORT.join('.')}, found ${process.versions.node}.\n\n` +
+    `  scripts/check-products.mjs imports src/lib/products.ts directly and\n` +
+    `  relies on node's built-in TypeScript type-stripping, which is unflagged\n` +
+    `  only from node 22.18.0 onward (see package.json's "engines.node").\n` +
+    `  Upgrade node and try again.`
+  );
+  process.exit(1);
+}
+
+const { PRODUCTS, PLACEHOLDER_VARIANT_ID } = await import('../src/lib/products.ts');
 
 export function checkProducts(products) {
   const problems = [];
