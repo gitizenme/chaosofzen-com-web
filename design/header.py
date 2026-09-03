@@ -43,8 +43,9 @@ W, H = 1600, 300
 WORDMARK = "Chaos of Zen"
 WEIGHT = 300           # matches global.css h1/h2/h3
 TYPE_PX = 78.0
-MARK_PX = 196.0
-GAP = 46.0             # mark to wordmark, optical rather than measured
+MARK_PER_CAP = 2.2     # mark height as a multiple of the wordmark's cap height
+GAP_PER_MARK = 0.5     # horizontal gap, as a fraction of mark height
+STACK_GAP_PER_MARK = 0.4
 
 
 def literata(fonts_dir: Path) -> Path:
@@ -114,26 +115,31 @@ def _toBytes(ft) -> bytes:
     return b.getvalue()
 
 
-def header_svg(fonts_dir: Path) -> str:
+def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
     d, tw, cap = wordmark_path(literata(fonts_dir), WORDMARK, TYPE_PX)
+    mark_px = MARK_PER_CAP * cap
+    body = mark.house_body()
+    s = mark_px / mark.VIEWBOX
 
-    # The mark is mark.py's house mark, unmodified, scaled off its 128 viewBox.
-    orbit = mark.fit_one(mark.rossler())
-    body = mark.brush(orbit, mark.BREATH,
-                      mark.house_stops(mark.INK_ON_DARK, .10), bristles=6, dry=.8)
-
-    # Centre the whole lockup, so a centre crop keeps it -- see --measure.
-    total = MARK_PX + GAP + tw
-    x0 = (W - total) / 2.0
-    s = MARK_PX / mark.VIEWBOX
-    mark_y = (H - MARK_PX) / 2.0
-    text_x = x0 + MARK_PX + GAP
-    text_y = H / 2.0 + cap / 2.0          # optical centre on cap height
+    if stacked:
+        gap = STACK_GAP_PER_MARK * mark_px
+        total_h = mark_px + gap + cap
+        mark_x = (W - mark_px) / 2.0
+        mark_y = (H - total_h) / 2.0
+        text_x = (W - tw) / 2.0
+        text_y = mark_y + mark_px + gap + cap
+    else:
+        gap = GAP_PER_MARK * mark_px
+        total = mark_px + gap + tw
+        mark_x = (W - total) / 2.0
+        mark_y = (H - mark_px) / 2.0
+        text_x = mark_x + mark_px + gap
+        text_y = H / 2.0 + cap / 2.0          # optical centre on cap height
 
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" \
 width="{W}" height="{H}" role="img" aria-label="Chaos of Zen">
   <rect width="{W}" height="{H}" fill="{mark.GROUND_SCORE}"/>
-  <g transform="translate({x0:.2f} {mark_y:.2f}) scale({s:.6f})">{body}</g>
+  <g transform="translate({mark_x:.2f} {mark_y:.2f}) scale({s:.6f})">{body}</g>
   <path transform="translate({text_x:.2f} {text_y:.2f})" d="{d}" \
 fill="{mark.INK_ON_DARK}"/>
 </svg>
@@ -174,6 +180,8 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--write", action="store_true", help="write the SVG and rasterise it")
     ap.add_argument("--measure", action="store_true", help="check centre-crop survival")
+    ap.add_argument("--stacked", action="store_true",
+                    help="mark above the wordmark (the store header) instead of beside it")
     ap.add_argument("--fonts", default="node_modules/.astro/fonts",
                     help="where Astro put the downloaded faces")
     a = ap.parse_args()
@@ -182,14 +190,16 @@ def main() -> int:
         return 0
 
     root = Path(__file__).resolve().parent.parent
-    svg, png = root / "design/store/header.svg", root / "design/store/header-1600.png"
+    svg_name = "header-stacked.svg" if a.stacked else "header.svg"
+    svg = root / "design/store" / svg_name
+    png = root / "design/store/header-1600.png"
     if a.write:
-        svg.write_text(header_svg(root / a.fonts))
+        svg.write_text(header_svg(root / a.fonts, stacked=a.stacked))
         print(f"wrote    {svg.relative_to(root)}  ({svg.stat().st_size} bytes)")
         subprocess.run(["inkscape", str(svg), "-w", str(W), "-h", str(H),
                         "--export-filename", str(png)], check=True, capture_output=True)
         print(f"wrote    {png.relative_to(root)}  ({png.stat().st_size} bytes)")
-    return measure(svg, png) if a.measure else 0
+    return measure(root / "design/store/header.svg", png) if a.measure else 0
 
 
 if __name__ == "__main__":
