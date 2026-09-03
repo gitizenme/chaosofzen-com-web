@@ -574,6 +574,79 @@ def ekphrasis_icon(ink: str = INK_ON_DARK) -> str:
     return icon_body(colour, inkloop, [ink, ink, TEAL], ink)
 
 
+# --------------------------------------------------------------------------
+# The strings and cloud field.
+#
+# A background layer for the site hero, the store header and the social card;
+# never part of an icon or a mark file. Vertical strings at positions from the
+# coprime periods Seriatim uses, so the pattern of gaps does not repeat inside
+# the field -- the same argument the instrument makes. Four strings take the
+# voice colours where the colour orbit's arc-length quarters sit. The cloud is
+# the mark's own stroke continued past its edge as dry brush.
+# --------------------------------------------------------------------------
+STRING_PERIODS = (5, 7, 11, 13)
+STRING_GRID = 4
+MUTED_ON_DARK = "#8b8b9e"
+
+
+def string_positions(width: int) -> list[int]:
+    xs = set()
+    for p in STRING_PERIODS:
+        for i in range(width // (STRING_GRID * p) + 1):
+            xs.add((STRING_GRID * i * p) % width)
+    return sorted(xs)
+
+
+def voice_string_xs() -> list[float]:
+    """x-centroids, in mark coordinates, of the colour orbit's four arc-length quarters."""
+    colour, _ = two_orbits()
+    to_param = arc_param(colour)
+    n = len(colour)
+    out = []
+    for k in range(4):
+        i0, i1 = int(to_param(k / 4) * (n - 1)), int(to_param((k + 1) / 4) * (n - 1))
+        seg = colour[i0:i1] or colour[i0:i0 + 1]
+        out.append(sum(p[0] for p in seg) / len(seg))
+    return out
+
+
+def strings_field_svg(width: int, height: int, mark_px: float,
+                      ink: str = INK_ON_DARK, muted: str = MUTED_ON_DARK) -> str:
+    """The strings only, as an SVG fragment in field coordinates. The mark is
+    assumed centred with side mark_px, which is where the voice strings land."""
+    lines = [f'<line x1="{x}" y1="0" x2="{x}" y2="{height}" stroke="{muted}" '
+             f'stroke-opacity="0.06" stroke-width="1"/>' for x in string_positions(width)]
+    s = mark_px / VIEWBOX
+    x0 = (width - mark_px) / 2
+    for vx, colour in zip(voice_string_xs(), VOICE):
+        x = x0 + vx * s
+        lines.append(f'<line x1="{x:.1f}" y1="0" x2="{x:.1f}" y2="{height}" '
+                     f'stroke="{colour}" stroke-width="1"/>')
+    return ''.join(lines)
+
+
+def cloud_svg(ink: str = INK_ON_DARK) -> str:
+    """The two orbits again, larger and drier, ink only, at 12 %."""
+    colour, inkorb = two_orbits(scale=HOUSE_SCALE * 1.35)
+    body = (brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], bristles=8, dry=.9, wobble=.8,
+                  seed0=.58, chunk=8)
+            + brush(colour, HOUSE_W, [(0, ink), (1, ink)], bristles=8, dry=.9, wobble=.8,
+                    seed0=.31, chunk=8))
+    return f'<g opacity="0.12">{body}</g>'
+
+
+def hero_field_svg(width: int = 1200, height: int = 630) -> str:
+    mark_px = height * 0.8
+    s = mark_px / VIEWBOX
+    x0, y0 = (width - mark_px) / 2, (height - mark_px) / 2
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
+            f'width="{width}" height="{height}" role="img" aria-label="Chaos of Zen">\n'
+            f'  <rect width="{width}" height="{height}" fill="{GROUND_SCORE}"/>\n'
+            f'  {strings_field_svg(width, height, mark_px)}\n'
+            f'  <g transform="translate({x0:.2f} {y0:.2f}) scale({s:.6f})">{cloud_svg()}{house_body()}</g>\n'
+            f'</svg>\n')
+
+
 def _svg(body: str, label: str) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" '
             f'role="img" aria-label="{label}">\n  {body}\n</svg>\n')

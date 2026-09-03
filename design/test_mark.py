@@ -187,5 +187,44 @@ class ProductMarks(unittest.TestCase):
         self.assertEqual(fills, [mark.INK_ON_DARK, mark.INK_ON_DARK, mark.TEAL])
 
 
+class Field(unittest.TestCase):
+    def test_string_positions_are_on_the_grid_and_unique(self):
+        xs = mark.string_positions(400)
+        self.assertEqual(xs, sorted(set(xs)))
+        self.assertTrue(all(x % mark.STRING_GRID == 0 for x in xs))
+        self.assertEqual(xs[0], 0)
+        self.assertLess(xs[-1], 400)
+
+    def test_string_gaps_do_not_repeat_as_a_period(self):
+        xs = mark.string_positions(800)
+        gaps = [b - a for a, b in zip(xs, xs[1:])]
+        # no period shorter than the field: the gap sequence is not k-periodic
+        for k in range(1, len(gaps) // 2):
+            self.assertNotEqual(gaps[:-k], gaps[k:])
+
+    def test_four_voice_strings(self):
+        xs = mark.voice_string_xs()
+        self.assertEqual(len(xs), 4)
+        self.assertTrue(all(0 < x < mark.VIEWBOX for x in xs))
+
+    def test_strings_fragment(self):
+        frag = mark.strings_field_svg(1200, 630, mark_px=400)
+        self.assertEqual(frag.count("<line"), len(mark.string_positions(1200)) + 4)
+        for v in mark.VOICE:
+            self.assertIn(f'stroke="{v}"', frag)
+        self.assertIn('stroke-opacity="0.06"', frag)
+
+    def test_cloud_is_ink_at_twelve_percent(self):
+        cloud = mark.cloud_svg()
+        self.assertTrue(cloud.startswith('<g opacity="0.12">'))
+        self.assertNotIn(mark.spectrum(0.5), cloud)
+
+    def test_hero_field_is_a_complete_svg(self):
+        svg = mark.hero_field_svg()
+        self.assertTrue(svg.startswith("<svg"))
+        self.assertIn('viewBox="0 0 1200 630"', svg)
+        self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', svg)     # the mark is in it
+
+
 if __name__ == "__main__":
     unittest.main()
