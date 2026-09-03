@@ -2,7 +2,10 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const PAGES = ['/', '/seriatim', '/seriatim/download', '/seriatim/thanks',
-                '/seriatim/manual', '/seriatim/changelog', '/eula', '/privacy'];
+                '/seriatim/manual', '/seriatim/changelog',
+                '/ekphrasis', '/ekphrasis/download', '/ekphrasis/thanks',
+                '/ekphrasis/manual', '/ekphrasis/changelog',
+                '/eula', '/privacy'];
 
 for (const path of PAGES) {
   test(`${path} has no accessibility violations`, async ({ page }) => {

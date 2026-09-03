@@ -11,6 +11,10 @@ describe('PRODUCTS', () => {
   // Each product's urls must point at ITS OWN prefix. Asserting only that a
   // url contains the right slug would pass if it also contained the other's,
   // so both halves are checked: the right one present, the wrong one absent.
+  //
+  // `slug` here is the RECORD KEY, which is the only place the slug lives --
+  // the interface deliberately carries no `slug` field for this identifier to
+  // be confused with. Read this as "the url under key `k` contains `/k/`".
   it.each(['seriatim', 'ekphrasis'] as const)('%s urls point at its own prefix', slug => {
     const p = PRODUCTS[slug];
     const other = slug === 'seriatim' ? 'ekphrasis' : 'seriatim';
