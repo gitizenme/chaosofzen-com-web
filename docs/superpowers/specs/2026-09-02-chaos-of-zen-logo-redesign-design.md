@@ -127,6 +127,16 @@ On the macOS grid the icon sits on the existing `ICON_GROUND` rounded rect (`#0e
 
 Seriatim's icon carries the pre-existing four-voice rule (§4), unchanged by this pass. It first measured as only 3 of 4 (amber under `MIN_PIXELS`), which briefly looked like a geometry problem — widening `ICON_LOOP_W` by up to 2.0 in both terms was tried and reverted, and only moved amber from 1 px to 2 px. The real cause was the classifier comparing rendered pixels against the pure voice values while the colour loop actually renders through the 0.76-opacity group: against the true on-screen colour (0.76·voice + 0.24·ground), amber and sage sit outside `THRESHOLD` (60) before antialiasing even starts. Compositing the reference palette against the ground at the asset's own group opacity (`layer_alpha`/`composite` in `measure_icon.py`) fixed the classifier without touching the mark; Seriatim now reads 4 of 4.
 
+The three composited bands' WCAG contrast against both grounds (`design/mark.ICON_BANDS`, each at `HOUSE_ALPHA` = 0.76 over the ground, `surfaces.ratio`):
+
+| Band | On `#0e0e14` | On `#f2f1f5` |
+|---|---|---|
+| `#e58136` | 4.37:1 | 1.99:1 |
+| `#91ac2f` | 4.72:1 | 1.85:1 |
+| `#00bbb1` | 4.97:1 | 1.83:1 |
+
+The ink loop, which renders at full strength rather than through the opacity group, is 16.1:1 on `#0e0e14` and 16.6:1 on `#f2f1f5` — comfortably clear on both grounds. The bands falling under 3:1 on the light ground is not a defect: the spectrum is pigment, not text (§1 decision 6), so no AA text-contrast rule applies to it; only the ink loop, which does carry the mark's legibility burden, needs to clear that bar, and does so by a wide margin on both grounds.
+
 ---
 
 ## 4. Product marks
@@ -173,7 +183,7 @@ The field is static SVG. On the site it is decorative (`aria-hidden`), honours `
 
 - **Face:** Literata weight 300, shaped by HarfBuzz and **outlined** by the existing `design/header.py`, so no font is embedded.
 - **Horizontal lockup** (site header, installer, DMG): mark height = 2.2 × the wordmark's cap height; gap between mark and wordmark = 0.5 × mark height; baseline of the wordmark at the mark's vertical centre + 0.35 × cap height.
-- **Stacked lockup** (store header, 1600×300): mark centred above the wordmark, gap 0.4 × mark height, the whole lockup centred on `#0e0e14`; the empty sides are the design, per `spec.md` §7.4.
+- **Stacked lockup** (store header, 1600×300): mark centred above the wordmark, gap 0.4 × mark height, the whole lockup centred on `#0e0e14`; the empty sides are the design, per `spec.md` §7.4. Mark height 3.2 × cap height (`MARK_PER_CAP_STACKED`), not the horizontal lockup's 2.2 — the 2.2 ratio read as noise at 300 px.
 - **Site nav** keeps the 22 px icon (§3) plus the wordmark in Source Sans 3 600 as today; the Literata lockup is for the hero, the store and installers.
 
 ---

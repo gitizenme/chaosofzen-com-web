@@ -55,7 +55,7 @@ Three asset groups are committed as binaries because reproducing them needs more
 than Python:
 
 - Raster icons and store PNGs are produced by `python3 design/rasters.py`
-  (Inkscape and Pillow), including `favicon.ico`, which it assembles from the
+  (Inkscape), including `favicon.ico`, which it assembles from the
   16/32/48 PNGs. The raster icons carry the dark rounded-rect ground so they
   read on both light and dark browser chrome.
 - **The store header raster** (`design/store/header-1600.png`) — not part of
@@ -167,9 +167,9 @@ is embedded for it at all — the licence question applies only to live UI text.
 
 ## Six constants that exist because of bugs
 
-Each was invisible to visual review and only appeared under measurement. They
-are marked `BUG-N` in `mark.py` and explained in `spec.md`. Do not "simplify"
-them away.
+Each was invisible to visual review and only appeared under measurement. Five
+are marked `BUG-N` in `mark.py`; the sixth is pinned by `test_mark.Icon`. Do
+not "simplify" them away.
 
 1. **Normalise the logistic series by range, not amplitude.** It is strongly
    skewed — max `1.00`, min `-0.06`. Dividing by `max(|v|)` leaves the minimum

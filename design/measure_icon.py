@@ -99,7 +99,10 @@ def layer_alpha(svg_text: str) -> float:
     excludes) -- i.e. whether this is the group actually painting the
     bands. The first such group's opacity wins; if it has no opacity
     attribute at all, or no group carries a band fill, the asset is
-    unlayered and this returns 1.0 (no compositing)."""
+    unlayered and this returns 1.0 (no compositing). Assumes the band-
+    carrying group is not itself nested inside another group with its own
+    opacity -- a doubly-nested opacity would need multiplying, which this
+    walk (first match wins) does not do."""
     for m in re.finditer(r'<g\b([^>]*)>(.*?)</g>', svg_text, re.S):
         attrs, body = m.groups()
         fills = set(re.findall(r'fill="(#[0-9a-f]{6})"', body))
@@ -219,7 +222,9 @@ def main(argv):
                     help="measure containment against the inscribed circle "
                          "rather than the macOS rounded rect")
     ap.add_argument("--bands", action="store_true",
-                    help="classify against the colours the asset carries, not the four voices")
+                    help="classify against the colours the asset carries, not the four "
+                         "voices -- meant for icons; a full mark yields hundreds of "
+                         "distinct fills, not a handful of bands")
     args = ap.parse_args(argv[1:])
     if not args.assets:
         ap.print_help()

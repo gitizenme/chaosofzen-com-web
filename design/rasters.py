@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rasterise the marks. Needs Inkscape and Pillow; run by hand.
+"""Rasterise the marks. Needs Inkscape; run by hand.
 
     python3 design/rasters.py
 
@@ -30,8 +30,11 @@ RASTERS = [
 
 
 def inkscape(svg: Path, png: Path, size: int) -> None:
-    subprocess.run(["inkscape", str(svg), "-w", str(size), "-h", str(size),
-                    "--export-filename", str(png)], check=True, capture_output=True)
+    try:
+        subprocess.run(["inkscape", str(svg), "-w", str(size), "-h", str(size),
+                        "--export-filename", str(png)], check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.stderr.decode())
     print(f"wrote {png.relative_to(ROOT)}  {size}px")
 
 

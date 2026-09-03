@@ -7,7 +7,8 @@ fontTools, uharfbuzz and Astro's downloaded Literata, so it lives beside
 measure_icon.py in the category of tools you run by hand.
 
     pnpm astro build                    # Astro fetches Literata into node_modules
-    python3 design/header.py --write            # header.svg, the horizontal lockup
+    python3 design/header.py --write            # header.svg -> header-horizontal-1600.png,
+                                                 # the installer lockup
     python3 design/header.py --write --stacked  # header-stacked.svg -> header-1600.png,
                                                  # the store upload
     python3 design/header.py --measure          # centre-crop survival of header.svg
@@ -44,7 +45,8 @@ W, H = 1600, 300
 WORDMARK = "Chaos of Zen"
 WEIGHT = 300           # matches global.css h1/h2/h3
 TYPE_PX = 78.0
-MARK_PER_CAP = 2.2     # mark height as a multiple of the wordmark's cap height
+MARK_PER_CAP = 2.2            # horizontal lockup: mark height / wordmark cap height
+MARK_PER_CAP_STACKED = 3.2    # stacked lockup: the 2.2 ratio read as noise at 300 px
 GAP_PER_MARK = 0.5     # horizontal gap, as a fraction of mark height
 STACK_GAP_PER_MARK = 0.4
 
@@ -118,7 +120,7 @@ def _toBytes(ft) -> bytes:
 
 def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
     d, tw, cap = wordmark_path(literata(fonts_dir), WORDMARK, TYPE_PX)
-    mark_px = MARK_PER_CAP * cap
+    mark_px = (MARK_PER_CAP_STACKED if stacked else MARK_PER_CAP) * cap
     # The mark is mark.py's house mark, unmodified, scaled off its 128 viewBox.
     body = mark.house_body()
     s = mark_px / mark.VIEWBOX
@@ -158,9 +160,9 @@ def measure(svg_path: Path) -> int:
 
     Centre-crop survival is only defined on the horizontal lockup (header.svg),
     not the stacked one, so this renders its own PNG from header.svg into a
-    scratch directory rather than reading design/store/header-1600.png -- that
-    file gets overwritten by whichever of --write / --write --stacked ran last,
-    and the store upload rule means it usually holds the stacked raster.
+    scratch directory rather than reading a committed raster -- header-1600.png
+    is the store upload and always holds the stacked orientation now that
+    horizontal writes its own header-horizontal-1600.png instead.
     """
     if not svg_path.exists():
         print(f"{svg_path} not found -- run --write first")
@@ -211,7 +213,10 @@ def main() -> int:
     root = Path(__file__).resolve().parent.parent
     svg_name = "header-stacked.svg" if a.stacked else "header.svg"
     svg = root / "design/store" / svg_name
-    png = root / "design/store/header-1600.png"
+    # Stacked writes the store upload (header-1600.png); horizontal writes its
+    # own file, so the two orientations no longer clobber each other's raster.
+    png_name = "header-1600.png" if a.stacked else "header-horizontal-1600.png"
+    png = root / "design/store" / png_name
     if a.write:
         svg.write_text(header_svg(root / a.fonts, stacked=a.stacked))
         print(f"wrote    {svg.relative_to(root)}  ({svg.stat().st_size} bytes)")
