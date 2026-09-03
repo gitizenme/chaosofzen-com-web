@@ -243,6 +243,58 @@ def spectrum_stops(n: int = 24) -> list[tuple[float, str]]:
 
 
 # --------------------------------------------------------------------------
+# Two orbits, mirrored through the centre.
+#
+# The redesigned marks are a yin-yang: two copies of one Rossler orbit, the
+# second rotated by pi about the centre, one carrying colour and one ink.
+# Each spiral's centre is an eye, so nothing else is drawn. Every product mark
+# shares this skeleton and changes only the colour orbit's stops -- siblings by
+# construction. See docs/superpowers/specs/2026-09-02-chaos-of-zen-logo-redesign-design.md.
+# --------------------------------------------------------------------------
+HOUSE_SCALE = 0.60
+HOUSE_OFFSET = (9.0, 10.0)     # fixed by test_mark.HouseMark; see spec section 7.4
+HOUSE_ALPHA = 0.76
+HOUSE_W = lambda t: 1.8 + 6.0 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
+WET = dict(bristles=8, dry=.45, wobble=.5)
+
+
+def place(pts, centre, scale: float, rot: float):
+    """Scale a fitted curve about the viewBox centre, rotate it, move it."""
+    out = []
+    c, s = math.cos(rot), math.sin(rot)
+    for x, y in pts:
+        dx, dy = (x - VIEWBOX / 2) * scale, (y - VIEWBOX / 2) * scale
+        out.append((centre[0] + dx * c - dy * s, centre[1] + dx * s + dy * c))
+    return out
+
+
+def two_orbits(t_end: float = 19.0, step: int = 8, scale: float = HOUSE_SCALE,
+               offset=HOUSE_OFFSET, margin: float = 13.0):
+    """(colour_orbit, ink_orbit): one fit, two placements, the second rotated pi."""
+    orbit = fit_one(rossler(t_end=t_end, step=step), margin=margin)
+    cx, cy = VIEWBOX / 2, VIEWBOX / 2
+    colour = place(orbit, (cx - offset[0], cy - offset[1]), scale, 0.0)
+    ink = place(orbit, (cx + offset[0], cy + offset[1]), scale, math.pi)
+    return colour, ink
+
+
+def layered(ink_body: str, colour_body: str, alpha: float = HOUSE_ALPHA) -> str:
+    """Ink underneath at full strength, colour on top at partial alpha.
+
+    Group opacity, not per-path: a stroke is many chunks and per-path alpha
+    would show every chunk seam.
+    """
+    return f'<g>{ink_body}</g><g opacity="{alpha}">{colour_body}</g>'
+
+
+def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
+    colour, inkorb = two_orbits()
+    stops = stops or spectrum_stops()
+    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+                   brush(colour, HOUSE_W, stops, seed0=.31, chunk=8, **WET))
+
+
+# --------------------------------------------------------------------------
 # The brush
 # --------------------------------------------------------------------------
 BREATH = lambda t: 2.4 + 8.8 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
@@ -505,9 +557,7 @@ def _svg(body: str, label: str) -> str:
 
 
 def house_mark_svg() -> str:
-    orbit = fit_one(rossler())
-    return _svg(brush(orbit, BREATH, house_stops(INK_ON_DARK, .10), bristles=6, dry=.8),
-                "Chaos of Zen")
+    return _svg(house_body(), "Chaos of Zen")
 
 
 def ekphrasis_mark_svg() -> str:
@@ -552,14 +602,9 @@ STORE_GROUND = '<rect x="0" y="0" width="128" height="128" fill="#0e0e14"/>'
 def store_logo_svg() -> str:
     """The merchant avatar. Rasterised to 320 px; see design/README.md.
 
-    The full-fidelity house mark, ink baked to #eceaf2 rather than left as
-    currentColor. Nothing about the geometry is reduced -- at 320 px the brush
-    and the feather are the whole point, and they are what section 4.5 found
-    are destroyed only down at icon sizes.
+    The full house mark, ink baked to #eceaf2, on the opaque store ground.
     """
-    orbit = fit_one(rossler())
-    body = brush(orbit, BREATH, house_stops(INK_ON_DARK, .10), bristles=6, dry=.8)
-    return _svg(STORE_GROUND + body, "Chaos of Zen")
+    return _svg(STORE_GROUND + house_body(INK_ON_DARK), "Chaos of Zen")
 
 
 def store_favicon_svg() -> str:

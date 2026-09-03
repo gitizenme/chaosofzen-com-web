@@ -44,8 +44,8 @@ Two copies of that fitted orbit, `A` (colour) and `B` (ink):
 | Parameter | Value |
 |---|---|
 | scale about (64, 64) | 0.60 |
-| offset of A's centre from (64, 64) | (−11, −8) |
-| offset of B's centre | (+11, +8) |
+| offset of A's centre from (64, 64) | (−9, −10) |
+| offset of B's centre | (+9, +10) |
 | rotation of B | π (point mirror through the centre) |
 
 These three numbers were chosen on a sheet and are the ones to fix by measurement before they harden (see §7). The criteria: the union's bounding box within 3 % of square, and ink balance between A and B (near-match pixel count at 512 px) within 0.9–1.1.

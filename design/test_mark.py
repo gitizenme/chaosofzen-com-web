@@ -3,7 +3,6 @@
 Standard library only. Run from the repo root:
     python3 -m unittest discover -s design -p 'test_*.py' -v
 """
-import math
 import re
 import sys
 import unittest
@@ -37,6 +36,69 @@ class Spectrum(unittest.TestCase):
         self.assertEqual(stops[0][0], 0.0)
         self.assertEqual(stops[-1][0], 1.0)
         self.assertTrue(all(HEX.match(c) for _, c in stops))
+
+
+NUM = re.compile(r"(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)")
+
+
+def coords(body: str) -> list[tuple[float, float]]:
+    return [(float(x), float(y)) for x, y in NUM.findall(body)]
+
+
+def _area(d: str) -> float:
+    pts = coords(d)
+    if len(pts) < 3:
+        return 0.0
+    s = 0.0
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:] + pts[:1]):
+        s += x0 * y1 - x1 * y0
+    return abs(s) / 2
+
+
+def group_areas(body: str) -> list[float]:
+    groups = re.findall(r"<g[^>]*>(.*?)</g>", body, re.S)
+    return [sum(_area(d) for d in re.findall(r' d="([^"]+)"', g)) for g in groups]
+
+
+def bbox(pts):
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+class HouseMark(unittest.TestCase):
+    def setUp(self):
+        self.body = mark.house_body()
+
+    def test_layering_ink_under_colour_over(self):
+        groups = re.findall(r"<g([^>]*)>", self.body)
+        self.assertEqual(len(groups), 2)
+        self.assertNotIn("opacity", groups[0])          # ink, full strength
+        self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', groups[1])
+
+    def test_colour_group_carries_the_spectrum(self):
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)[1]
+        fills = set(re.findall(r'fill="(#[0-9a-f]{6})"', colour))
+        self.assertGreaterEqual(len(fills), 12)          # a sweep, not a few bands
+        self.assertNotIn(mark.INK_ON_DARK, fills)
+
+    def test_union_is_within_three_percent_of_square(self):
+        x0, y0, x1, y1 = bbox(coords(self.body))
+        w, h = x1 - x0, y1 - y0
+        self.assertLessEqual(abs(w - h) / max(w, h), 0.03)
+
+    def test_ink_balance_between_the_two_orbits(self):
+        ink, colour = group_areas(self.body)
+        self.assertGreaterEqual(min(ink, colour) / max(ink, colour), 0.9)
+
+    def test_stays_inside_the_viewbox(self):
+        x0, y0, x1, y1 = bbox(coords(self.body))
+        self.assertGreaterEqual(min(x0, y0), 0.0)
+        self.assertLessEqual(max(x1, y1), mark.VIEWBOX)
+
+    def test_house_mark_svg_is_the_layered_body(self):
+        svg = mark.house_mark_svg()
+        self.assertIn('viewBox="0 0 128 128"', svg)
+        self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', svg)
 
 
 if __name__ == "__main__":
