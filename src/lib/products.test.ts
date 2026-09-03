@@ -11,7 +11,7 @@ describe('PRODUCTS', () => {
   // Each product's urls must point at ITS OWN prefix. Asserting only that a
   // url contains the right slug would pass if it also contained the other's,
   // so both halves are checked: the right one present, the wrong one absent.
-  it.each(['seriatim', 'ekphrasis'])('%s urls point at its own prefix', slug => {
+  it.each(['seriatim', 'ekphrasis'] as const)('%s urls point at its own prefix', slug => {
     const p = PRODUCTS[slug];
     const other = slug === 'seriatim' ? 'ekphrasis' : 'seriatim';
     for (const url of [p.downloadUrl, p.manifestUrl]) {
@@ -22,7 +22,7 @@ describe('PRODUCTS', () => {
 
   // The download url is a STABLE ALIAS. A versioned url here would work for
   // exactly one release and then pin the site to it silently.
-  it.each(['seriatim', 'ekphrasis'])('%s download url is the stable alias', slug => {
+  it.each(['seriatim', 'ekphrasis'] as const)('%s download url is the stable alias', slug => {
     expect(PRODUCTS[slug].downloadUrl).toMatch(/-latest\.dmg$/);
   });
 
@@ -47,7 +47,11 @@ describe('seriatim aliases are unchanged by the refactor', () => {
   it('SUGGESTED_PRICE_CENTS', () => {
     expect(SUGGESTED_PRICE_CENTS).toBe(1200);
   });
-  it('the aliases and the record are the same values, not parallel copies', () => {
+  // toBe is value equality on strings/numbers, so this cannot distinguish a
+  // genuine alias from a coincidentally-equal literal -- the four literal
+  // assertions above already pin both sides independently. What this checks
+  // is that the alias and the record agree.
+  it('the alias and the record agree', () => {
     expect(DOWNLOAD_URL).toBe(PRODUCTS.seriatim.downloadUrl);
     expect(MANIFEST_URL).toBe(PRODUCTS.seriatim.manifestUrl);
     expect(SERIATIM_VARIANT_ID).toBe(PRODUCTS.seriatim.variantId);

@@ -23,7 +23,7 @@ export interface Product {
 // nothing.
 export const PLACEHOLDER_VARIANT_ID = 'PLACEHOLDER-NO-LEMON-SQUEEZY-PRODUCT-YET';
 
-export const PRODUCTS: Record<string, Product> = {
+export const PRODUCTS: Record<'seriatim' | 'ekphrasis', Product> = {
   seriatim: {
     slug: 'seriatim',
     name: 'Seriatim',
