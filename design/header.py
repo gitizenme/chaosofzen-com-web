@@ -7,9 +7,10 @@ fontTools, uharfbuzz and Astro's downloaded Literata, so it lives beside
 measure_icon.py in the category of tools you run by hand.
 
     pnpm astro build                    # Astro fetches Literata into node_modules
-    python3 design/header.py --write
-    inkscape design/store/header.svg -w 1600 -h 300 \
-             --export-filename=design/store/header-1600.png
+    python3 design/header.py --write            # header.svg, the horizontal lockup
+    python3 design/header.py --write --stacked  # header-stacked.svg -> header-1600.png,
+                                                 # the store upload
+    python3 design/header.py --measure          # centre-crop survival of header.svg
 
 THE WORDMARK IS OUTLINED, per spec.md section 6. Nothing here embeds a font, so
 the licence question that applies to live UI text does not arise. The glyphs are
@@ -118,6 +119,7 @@ def _toBytes(ft) -> bytes:
 def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
     d, tw, cap = wordmark_path(literata(fonts_dir), WORDMARK, TYPE_PX)
     mark_px = MARK_PER_CAP * cap
+    # The mark is mark.py's house mark, unmodified, scaled off its 128 viewBox.
     body = mark.house_body()
     s = mark_px / mark.VIEWBOX
 
@@ -129,6 +131,7 @@ def header_svg(fonts_dir: Path, stacked: bool = False) -> str:
         text_x = (W - tw) / 2.0
         text_y = mark_y + mark_px + gap + cap
     else:
+        # Centre the whole lockup, so a centre crop keeps it -- see --measure.
         gap = GAP_PER_MARK * mark_px
         total = mark_px + gap + tw
         mark_x = (W - total) / 2.0
@@ -146,20 +149,36 @@ fill="{mark.INK_ON_DARK}"/>
 '''
 
 
-def measure(svg_path: Path, png: Path) -> int:
-    """Does the lockup survive the crops a 16:3 banner actually gets?
+def measure(svg_path: Path) -> int:
+    """Does the horizontal lockup survive the crops a 16:3 banner actually gets?
 
     A storefront header is centre-cropped as the viewport narrows. Ink lost to
     that is the same defect class as BUG-5 -- part of the mark somewhere it
     cannot be seen -- so it is measured rather than assumed.
+
+    Centre-crop survival is only defined on the horizontal lockup (header.svg),
+    not the stacked one, so this renders its own PNG from header.svg into a
+    scratch directory rather than reading design/store/header-1600.png -- that
+    file gets overwritten by whichever of --write / --write --stacked ran last,
+    and the store upload rule means it usually holds the stacked raster.
     """
+    if not svg_path.exists():
+        print(f"{svg_path} not found -- run --write first")
+        return 1
+
+    import tempfile
     from PIL import Image
-    im = Image.open(png).convert("RGB")
-    w, h = im.size
-    px = im.load()
-    g = mark._rgb(mark.GROUND_SCORE)
-    cols = [x for x in range(w)
-            if any(sum(abs(a - b) for a, b in zip(px[x, y], g)) > 40 for y in range(h))]
+    with tempfile.TemporaryDirectory() as td:
+        png = Path(td) / "header-measure.png"
+        subprocess.run(["inkscape", str(svg_path), "-w", str(W), "-h", str(H),
+                        "--export-filename", str(png)], check=True, capture_output=True)
+        im = Image.open(png).convert("RGB")
+        w, h = im.size
+        px = im.load()
+        g = mark._rgb(mark.GROUND_SCORE)
+        cols = [x for x in range(w)
+                if any(sum(abs(a - b) for a, b in zip(px[x, y], g)) > 40 for y in range(h))]
+
     lo, hi = min(cols), max(cols)
     print(f"lockup spans x {lo}-{hi} of {w}  ({(hi - lo) / w * 100:.1f}% of the width)")
     print(f"{'crop':>10s} {'kept':>8s}")
@@ -199,7 +218,7 @@ def main() -> int:
         subprocess.run(["inkscape", str(svg), "-w", str(W), "-h", str(H),
                         "--export-filename", str(png)], check=True, capture_output=True)
         print(f"wrote    {png.relative_to(root)}  ({png.stat().st_size} bytes)")
-    return measure(root / "design/store/header.svg", png) if a.measure else 0
+    return measure(root / "design/store/header.svg") if a.measure else 0
 
 
 if __name__ == "__main__":
