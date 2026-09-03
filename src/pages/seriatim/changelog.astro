@@ -1,9 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection, render } from 'astro:content';
+import { entriesFor } from '../../lib/changelog';
 
-const entries = await getCollection('changelog');
-entries.sort((a, b) => (a.data.date < b.data.date ? 1 : -1));
+const allEntries = await getCollection('changelog');
+const entries = entriesFor(allEntries, 'seriatim');
 const rendered = await Promise.all(entries.map(e => render(e)));
 ---
 <Base
