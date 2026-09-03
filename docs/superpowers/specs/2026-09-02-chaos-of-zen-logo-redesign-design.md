@@ -114,16 +114,16 @@ On the macOS grid the icon sits on the existing `ICON_GROUND` rounded rect (`#0e
 
 ### 3.3 Measurement
 
-`design/measure_icon.py` at 16 and 32 px: escaped fraction must be 0.0 %, and all three colour bands plus the ink loop must survive classification at 16 px. Measured (`--bands` classifies against the asset's own colours rather than the four voices):
+`design/measure_icon.py` at 16 and 32 px: escaped fraction must be 0.0 %, and all three colour bands plus the ink loop must survive classification at 16 px. The colour loop renders inside a `<g opacity="0.76">` group over the `#0e0e14` ground, so the classifier compares against each colour composited at that alpha over the ground, not the pure source value — the ink loop sits under that group and stays at full strength. Measured (`--bands` classifies against the asset's own colours rather than the four voices):
 
-| Asset | Size | Escaped | Readable bands |
-|---|---|---|---|
-| `public/marks/chaos-of-zen-icon.svg` | 16 px | 0.0 % | 3 of 3 |
-| `public/marks/chaos-of-zen-icon.svg` | 32 px | 0.0 % | 3 of 3 |
-| `design/store/favicon.svg` (`--circle`) | 32 px | 0.0 % | 3 of 3 |
-| `public/marks/seriatim-icon.svg` | 16 px | 0.0 % | 3 of 4 voices (amber at 1 px, below `MIN_PIXELS`) |
+| Asset | Size | Escaped | Readable bands | Alpha |
+|---|---|---|---|---|
+| `public/marks/chaos-of-zen-icon.svg` | 16 px | 0.0 % | 3 of 3 | 0.76 |
+| `public/marks/chaos-of-zen-icon.svg` | 32 px | 0.0 % | 3 of 3 | 0.76 |
+| `design/store/favicon.svg` (`--circle`) | 32 px | 0.0 % | 3 of 3 | 0.76 |
+| `public/marks/seriatim-icon.svg` | 16 px | 0.0 % | 4 of 4 voices | 0.76 |
 
-Seriatim's icon carries the pre-existing four-voice rule (§4), unchanged by this pass; its amber band was already under `MIN_PIXELS` at 16 px before this measurement existed to see it, and widening `ICON_LOOP_W` by up to 2.0 in both terms (tried and reverted) raised it only to 2 px. Left as a known gap — see the redesign's task-8 report.
+Seriatim's icon carries the pre-existing four-voice rule (§4), unchanged by this pass. It first measured as only 3 of 4 (amber under `MIN_PIXELS`), which briefly looked like a geometry problem — widening `ICON_LOOP_W` by up to 2.0 in both terms was tried and reverted, and only moved amber from 1 px to 2 px. The real cause was the classifier comparing rendered pixels against the pure voice values while the colour loop actually renders through the 0.76-opacity group: against the true on-screen colour (0.76·voice + 0.24·ground), amber and sage sit outside `THRESHOLD` (60) before antialiasing even starts. Compositing the reference palette against the ground at the asset's own group opacity (`layer_alpha`/`composite` in `measure_icon.py`) fixed the classifier without touching the mark; Seriatim now reads 4 of 4.
 
 ---
 

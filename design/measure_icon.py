@@ -80,6 +80,18 @@ def dist(a, b):
     return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
 
 
+def layer_alpha(svg_text: str) -> float:
+    """The colour loop is drawn in a <g opacity="..."> group over the ground,
+    so the smallest group opacity in the asset is what actually reaches the
+    screen. 1.0 (no compositing) if the asset carries no opacity group."""
+    values = [float(v) for v in re.findall(r'<g[^>]*\bopacity="([\d.]+)"', svg_text)]
+    return min(values) if values else 1.0
+
+
+def composite(colour, ground, alpha):
+    return tuple(round(alpha * c + (1 - alpha) * g) for c, g in zip(colour, ground))
+
+
 def render(svg_text: str, png: Path, size: int, background: str | None = None):
     src = png.with_suffix(".svg")
     src.write_text(svg_text)
@@ -131,6 +143,16 @@ def escaped_fraction(svg_text: str, tmp: Path, size: int = 256,
 def measure(svg: Path, size: int = 16, circle: bool = False, bands=None):
     svg_text = svg.read_text()
     palette = bands if bands is not None else VOICES
+    # The colour layer is composited at the group's opacity over the ground,
+    # so a pure voice value is never on screen: what renders is
+    # alpha*colour + (1-alpha)*ground. Classify against that composited
+    # colour, not the source value, or a band sitting close to THRESHOLD's
+    # edge reads as unreadable when it is only unreadable to the wrong
+    # reference colour. The ink loop sits outside the opacity group (it is
+    # UNDER the colour layer, not inside it) so it stays at full strength.
+    alpha = layer_alpha(svg_text)
+    expected = {name: composite(colour, GROUND, alpha)
+                for name, colour in palette.items()}
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir)
         png = tmp / "out.png"
@@ -148,7 +170,7 @@ def measure(svg: Path, size: int = 16, circle: bool = False, bands=None):
                 continue
             lit += 1
             best, best_d = None, 1e9
-            for name, colour in list(palette.items()) + [("ink", INK)]:
+            for name, colour in list(expected.items()) + [("ink", INK)]:
                 d = dist(px, colour)
                 if d < best_d:
                     best, best_d = name, d
@@ -161,6 +183,7 @@ def measure(svg: Path, size: int = 16, circle: bool = False, bands=None):
         "readable": sum(1 for v in counts.values() if v >= MIN_PIXELS),
         "balance": (values[0] / values[-1]) if values[-1] else 0.0,
         "coverage": lit / (size * size),
+        "alpha": alpha,
     }
 
 
@@ -189,7 +212,7 @@ def main(argv):
         r = measure(path, size=args.size, circle=args.circle, bands=bands)
         esc = "n/a" if r["escaped"] is None else f"{r['escaped'] * 100:.1f}%"
         print(f"{arg:34s} {r['readable']:>3d}/{len(r['counts']):d} {r['balance']:>8.2f} "
-              f"{r['coverage'] * 100:>8.1f}% {esc:>8s}")
+              f"{r['coverage'] * 100:>8.1f}% {esc:>8s}  alpha {r['alpha']:.2f}")
         print(f"{'':34s} {r['counts']}")
         # Ink outside the ground is a defect, not a note: it puts part of the
         # mark on the desktop. Anything above a rounding error fails.
