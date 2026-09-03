@@ -53,4 +53,53 @@ describe('entriesFor', () => {
     ];
     expect(entriesFor(seriatimOnly, 'ekphrasis')).toEqual([]);
   });
+
+  // A version can carry a pre-release suffix (this project's own
+  // parse_version and publish pipeline treat "-rcN" as first-class), and
+  // .split('.').map(Number) on "1.4.0-rc1" produces NaN in its last
+  // component. A comparator that returns NaN is invalid -- V8 silently
+  // treats it as 0 -- so this must never happen. Same-day, so the ordering
+  // comes entirely from the version comparator.
+  it('ranks a release candidate below its same-day final release, consistently in both input orders', () => {
+    const rc: { data: { product: ProductSlug; version: string; title: string; date: string } } =
+      { data: { product: 'seriatim', version: '1.4.0-rc1', title: 'rc', date: '2026-08-16' } };
+    const final: { data: { product: ProductSlug; version: string; title: string; date: string } } =
+      { data: { product: 'seriatim', version: '1.4.0', title: 'final', date: '2026-08-16' } };
+
+    expect(entriesFor([rc, final], 'seriatim').map(e => e.data.version)).toEqual(['1.4.0', '1.4.0-rc1']);
+    expect(entriesFor([final, rc], 'seriatim').map(e => e.data.version)).toEqual(['1.4.0', '1.4.0-rc1']);
+  });
+
+  // The coordinator's own measurement: with the NaN-producing comparator,
+  // sort(['1.4.0-rc1', '1.4.0', '1.4.1']) misplaces 1.4.0 -- it lands last
+  // instead of second. This test pins the correct three-way order.
+  it('sorts a release candidate to the end of its same-day numeric siblings', () => {
+    const tied: { data: { product: ProductSlug; version: string; title: string; date: string } }[] = [
+      { data: { product: 'seriatim', version: '1.4.0-rc1', title: 'rc', date: '2026-08-16' } },
+      { data: { product: 'seriatim', version: '1.4.0', title: 'final', date: '2026-08-16' } },
+      { data: { product: 'seriatim', version: '1.4.1', title: 'patch', date: '2026-08-16' } },
+    ];
+    expect(entriesFor(tied, 'seriatim').map(e => e.data.version)).toEqual(['1.4.1', '1.4.0', '1.4.0-rc1']);
+  });
+
+  // The numeric comparator must still be correct now that it also has to
+  // handle suffixes: a double-digit component doesn't become a lexical
+  // comparison (1.10.0 sorts above 1.9.0, not below it), and versions with a
+  // trailing zero component tie with their shorter, equal form.
+  it('still compares plain numeric versions correctly', () => {
+    const doubleDigit: { data: { product: ProductSlug; version: string; title: string; date: string } }[] = [
+      { data: { product: 'seriatim', version: '1.9.0', title: 'nine', date: '2026-08-16' } },
+      { data: { product: 'seriatim', version: '1.10.0', title: 'ten', date: '2026-08-16' } },
+    ];
+    expect(entriesFor(doubleDigit, 'seriatim').map(e => e.data.version)).toEqual(['1.10.0', '1.9.0']);
+
+    // A genuine tie (0 diff, not NaN) is stable: whichever order the tied
+    // entries arrive in is the order they come out in.
+    const short: { data: { product: ProductSlug; version: string; title: string; date: string } } =
+      { data: { product: 'seriatim', version: '1.4', title: 'short form', date: '2026-08-16' } };
+    const long: { data: { product: ProductSlug; version: string; title: string; date: string } } =
+      { data: { product: 'seriatim', version: '1.4.0', title: 'long form', date: '2026-08-16' } };
+    expect(entriesFor([short, long], 'seriatim').map(e => e.data.version)).toEqual(['1.4', '1.4.0']);
+    expect(entriesFor([long, short], 'seriatim').map(e => e.data.version)).toEqual(['1.4.0', '1.4']);
+  });
 });

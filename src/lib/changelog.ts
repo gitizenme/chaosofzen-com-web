@@ -4,16 +4,39 @@
 export const PRODUCT_SLUGS = ['seriatim', 'ekphrasis'] as const;
 export type ProductSlug = (typeof PRODUCT_SLUGS)[number];
 
+// Splits a version like "1.4.0-rc1" into its numeric components ([1, 4, 0])
+// and whether it carries a pre-release suffix. A component that still isn't
+// numeric once the suffix is stripped is treated as 0, not NaN: a comparator
+// must never return NaN -- V8 treats that as "equal" and silently corrupts
+// the sort, which is exactly what plain `.split('.').map(Number)` did here
+// on a version like "1.4.0-rc1" (its last component, "0-rc1", is NaN).
+function parseVersion(version: string): { parts: number[]; hasSuffix: boolean } {
+  const dashIndex = version.indexOf('-');
+  const hasSuffix = dashIndex !== -1;
+  const numeric = hasSuffix ? version.slice(0, dashIndex) : version;
+  const parts = numeric.split('.').map(part => {
+    const n = Number(part);
+    return Number.isFinite(n) ? n : 0;
+  });
+  return { parts, hasSuffix };
+}
+
 // Compares dot-separated version numbers component-by-component, descending
-// (higher version first). Used only to break a same-day date tie.
+// (higher version first). A pre-release suffix (e.g. "-rc1") ranks below the
+// same numeric version without one -- 1.4.0-rc1 precedes 1.4.0, matching
+// semver precedence and this project's own release process (parse_version
+// and the publish pipeline both treat "-rcN" as a first-class, pre-final
+// version, so an rc changelog entry is expected, not exotic). Used only to
+// break a same-day date tie.
 function compareVersionDescending(a: string, b: string): number {
-  const partsA = a.split('.').map(Number);
-  const partsB = b.split('.').map(Number);
-  const length = Math.max(partsA.length, partsB.length);
+  const va = parseVersion(a);
+  const vb = parseVersion(b);
+  const length = Math.max(va.parts.length, vb.parts.length);
   for (let i = 0; i < length; i++) {
-    const diff = (partsB[i] ?? 0) - (partsA[i] ?? 0);
+    const diff = (vb.parts[i] ?? 0) - (va.parts[i] ?? 0);
     if (diff !== 0) return diff;
   }
+  if (va.hasSuffix !== vb.hasSuffix) return va.hasSuffix ? 1 : -1;
   return 0;
 }
 
