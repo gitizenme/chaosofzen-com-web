@@ -1,6 +1,8 @@
 # Chaos of Zen — Visual Identity Design
 
-**Status:** Applied to this site and deployed. Plugin application not built.
+**Status:** Sections 4 (the mark) and 7.2–7.3 are superseded by
+`docs/superpowers/specs/2026-09-02-chaos-of-zen-logo-redesign-design.md`.
+Sections 5, 6 and 7.4 stand.
 **Date:** 2026-08-30
 **Scope:** The Chaos of Zen house mark, the Ekphrasis and Seriatim product
 marks, the applied theme, and the Lemon Squeezy storefront (§7.4).
@@ -97,7 +99,7 @@ that. It is the test this document keeps returning to.
 
 ---
 
-## 4. The mark
+## 4. The mark (superseded)
 
 ### 4.1 Construction
 
@@ -444,7 +446,7 @@ not the merchant selling it.
 |---|---|---|
 | Header | `design/store/header-1600.png` | 1600×300, the mark locked up with an outlined Literata 300 wordmark |
 | Logo | `design/store/logo-320.png` | Full-fidelity house mark. 2× the recommended 160 for retina; ~50 KB against a 1 MB cap |
-| Favicon | `design/store/favicon-32.png` | `reduced_body()`, ink baked. 4 of 4 voices at 32 px |
+| Favicon | `design/store/favicon-32.png` | The two-loop icon construction (`house_icon`), ink baked. See `docs/superpowers/specs/2026-09-02-chaos-of-zen-logo-redesign-design.md` |
 | Product thumbnail | `design/store/product-seriatim-1024.png` | Seriatim's own mark, not the house mark — the exception above. 1024×1024 is assumed, not read from the dashboard |
 | Theme | **Vanilla** | The only neutral ground offered. Kiwi, Lime and Blueberry impose green, mint and purple card grounds that collide with the voice palette |
 | Button | `#17786e` | The light-ground accent of §5.1 |

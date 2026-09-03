@@ -7,8 +7,8 @@ it. Nothing here ships to the browser; it generates what does.
 |---|---|
 | [`mark.py`](mark.py) | The generator. Produces every mark from the equations. |
 | [`spec.md`](spec.md) | Why the system is the way it is, and what was rejected. |
-| [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. Needs Inkscape and Pillow; run by hand. |
-| [`header.py`](header.py) | The storefront header — the mark locked up with an outlined wordmark. Needs fontTools, uharfbuzz, Inkscape and Astro's downloaded Literata; run by hand. |
+| [`measure_icon.py`](measure_icon.py) | Measures whether a mark survives at 16 px, and whether it stays inside its own ground. `--bands` classifies against the colours the asset actually carries, compositing the expected colours through the colour layer's own group opacity. Needs Inkscape and Pillow; run by hand. |
+| [`header.py`](header.py) | The store header (stacked) and installer lockup (horizontal). Needs fontTools, uharfbuzz, Inkscape and Astro's downloaded Literata; run by hand. |
 | [`surfaces.py`](surfaces.py) | Records each storefront surface's ground and accent, and checks every pairing clears WCAG AA. Standard library only; run by hand. |
 
 ## The one rule
@@ -38,14 +38,13 @@ Standard library only. No dependencies.
 
 | Asset | What it is |
 |---|---|
-| `public/favicon.svg` | The house mark, quantised to five flat colours and 4.7 KB, ink as `currentColor` so one file serves both themes |
-| `public/marks/chaos-of-zen.svg` | The house mark at full fidelity — feathers through all four voices |
-| `public/marks/ekphrasis.svg` | Stroke width is image brightness; barely lifts, because an image has no gaps |
-| `public/marks/seriatim.svg` | Four voices divide one orbit, each in its own colour |
-| `public/marks/seriatim-icon.svg` | The same four voices reduced for bundle icons — one loop, solid colours, on a dark rounded rect. The feather is dropped and the orbit is fitted to the ground: see BUG-4 and BUG-5 |
-| `design/store/logo.svg` | The merchant avatar for the Lemon Squeezy storefront — the full house mark on an opaque full-bleed `#0e0e14`, ink baked rather than `currentColor` |
-| `design/store/favicon.svg` | The storefront tab icon — `reduced_body()` with baked ink and the same opaque ground |
-| `design/store/product-seriatim.svg` | Seriatim's storefront thumbnail, the four-voice mark on the opaque store ground. The one store asset that takes a product mark rather than the house mark. |
+| `public/favicon.svg` | The icon construction: two outer loops, colour over ink, ink as `currentColor` |
+| `public/marks/chaos-of-zen.svg` | The house mark: two orbits mirrored through the centre, spectrum over ink at 76 % |
+| `public/marks/chaos-of-zen-icon.svg` | The icon on the macOS rounded-rect ground; source of every raster icon |
+| `public/marks/ekphrasis.svg`, `ekphrasis-icon.svg` | Same skeleton; the colour orbit is ink with one teal handover |
+| `public/marks/seriatim.svg`, `seriatim-icon.svg` | Same skeleton; the colour orbit is four voices with rests, the icon four flat bands |
+| `public/marks/field.svg` | Strings at coprime positions and the mark's own dry-brush cloud, 1200×630, for the hero and the social card |
+| `design/store/*.svg` | As before: house mark, icon and Seriatim thumbnail on the opaque store ground |
 
 Every mark is the same orbit drawn by the same brush. What separates them is
 **what drives the chaos** — so they are siblings by construction, not by styling.
@@ -55,24 +54,14 @@ Every mark is the same orbit drawn by the same brush. What separates them is
 Three asset groups are committed as binaries because reproducing them needs more
 than Python:
 
-- **Raster icons** (`favicon.ico`, `icon-*.png`, `apple-touch-icon.png`) —
-  rasterised from the mark. Regenerating needs a renderer; the ICO is a
-  hand-assembled container around 16/32/48 PNG payloads, valid since Vista.
-- **The store rasters** (`design/store/logo-320.png`, `design/store/favicon-32.png`,
-  `design/store/product-seriatim-1024.png`, `design/store/header-1600.png`) — what
-  actually gets uploaded, since the storefront takes PNG. The first three come from
-  the store SVGs in the table above; the header comes from `header.svg`, which
-  [`header.py`](header.py) generates rather than `mark.py`. All four rasterise the
-  same way:
-
-  ```sh
-  cd design/store
-  inkscape logo.svg    -w 320 -h 320 --export-filename=logo-320.png
-  inkscape favicon.svg -w  32 -h  32 --export-filename=favicon-32.png
-  inkscape product-seriatim.svg -w 1024 -h 1024 --export-filename=product-seriatim-1024.png
-  inkscape header.svg  -w 1600 -h 300 --export-filename=header-1600.png
-  ```
-
+- Raster icons and store PNGs are produced by `python3 design/rasters.py`
+  (Inkscape and Pillow), including `favicon.ico`, which it assembles from the
+  16/32/48 PNGs. The raster icons carry the dark rounded-rect ground so they
+  read on both light and dark browser chrome.
+- **The store header raster** (`design/store/header-1600.png`) — not part of
+  `rasters.py`, because it needs real font metrics, not just a mark. Comes from
+  `header-stacked.svg`, which [`header.py`](header.py) generates:
+  `python3 design/header.py --write --stacked`.
 - **The social card** (`public/og/default.png`) — rendered in a browser served
   from this origin, because it must use the real self-hosted Literata and
   Source Sans 3. An earlier attempt silently fell back to system Times, so the
@@ -204,10 +193,6 @@ them away.
    that counts coloured pixels cannot tell where they are. This is the one
    defect here that measurement missed and looking caught; `measure_icon.py`
    checks containment now.
-6. **The reduced mark's colour quantisation is a legibility mechanism, not a
-   compression one.** It was added to get `favicon.svg` from 33 KB to 4.7 KB
-   and was documented as nothing else. At 32 px the same geometry *without* the
-   snap retains 3 voices of 4 with amber at **zero** pixels; with it, 4 of 4.
-   It is BUG-4's remedy applied to the one mark that cannot drop its feather,
-   because feathering through all four voices is what the house mark *is*.
-   Nothing rendering below ~64 px may take the unquantised ramp.
+6. **Each icon loop is one path.** The icon's colour loop sits over the ink
+   loop at partial alpha; a loop drawn as chunks shows every seam through that
+   alpha. `test_mark.Icon` counts paths.

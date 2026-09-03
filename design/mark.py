@@ -192,8 +192,9 @@ def single_stops(ink: str, colour: str, at: float = 0.84, feather: float = 0.26)
 #
 # The coloured half of the house mark carries the whole hue circle, as the
 # original painting does. It is defined in oklch at CONSTANT lightness and
-# chroma so no hue shouts: L and C are the means of the four voice colours'
-# own oklch values, so the sweep sits at the voices' lightness.
+# chroma so no hue shouts: L and C sit close to the means of the four voice
+# colours' own oklch values (0.73 / 0.14), so the sweep sits at the voices'
+# lightness.
 # --------------------------------------------------------------------------
 SPECTRUM_L, SPECTRUM_C = 0.70, 0.15
 
@@ -355,7 +356,6 @@ def house_icon(ink: str = INK_ON_DARK) -> str:
 # The brush
 # --------------------------------------------------------------------------
 BREATH = lambda t: 2.4 + 8.8 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
-BREATH_SMALL = lambda t: 4.0 + 9.5 * math.sin(math.pow(t, .8) * math.pi)
 
 
 def brush(pts, width_of, stops, *, bristles: int = 6, dry: float = 0.8,
