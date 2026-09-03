@@ -102,4 +102,19 @@ describe('entriesFor', () => {
     expect(entriesFor([short, long], 'seriatim').map(e => e.data.version)).toEqual(['1.4', '1.4.0']);
     expect(entriesFor([long, short], 'seriatim').map(e => e.data.version)).toEqual(['1.4.0', '1.4']);
   });
+
+  // parseVersion's `Number.isFinite(n) ? n : 0` fallback is the only thing
+  // stopping a non-numeric component (e.g. a version string that isn't a
+  // version at all) from producing NaN and corrupting the sort the way
+  // round 2's rc suffix did. This pins the fallback's actual behavior: junk
+  // sorts below every real version, not above or interleaved with one.
+  it('sorts a non-numeric version below every valid version', () => {
+    const junk: { data: { product: ProductSlug; version: string; title: string; date: string } }[] = [
+      { data: { product: 'seriatim', version: 'abc', title: 'junk', date: '2026-08-16' } },
+      { data: { product: 'seriatim', version: '1.0.0', title: 'one', date: '2026-08-16' } },
+      { data: { product: 'seriatim', version: '2.0.0', title: 'two', date: '2026-08-16' } },
+    ];
+    expect(entriesFor(junk, 'seriatim').map(e => e.data.version)).toEqual(['2.0.0', '1.0.0', 'abc']);
+    expect(entriesFor([...junk].reverse(), 'seriatim').map(e => e.data.version)).toEqual(['2.0.0', '1.0.0', 'abc']);
+  });
 });
