@@ -3,6 +3,7 @@
 Standard library only. Run from the repo root:
     python3 -m unittest discover -s design -p 'test_*.py' -v
 """
+import math
 import re
 import sys
 import unittest
@@ -65,6 +66,25 @@ def bbox(pts):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def _point_in_polygon(pt, poly):
+    """Ray-casting point-in-polygon test. A point that lies exactly ON an
+    edge or vertex -- as an abutting (non-overlapping) band boundary does --
+    is not reliably reported as inside; only a point strictly inside the
+    polygon's interior is."""
+    x, y = pt
+    inside = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        xi, yi = poly[i]
+        xj, yj = poly[j]
+        if (yi > y) != (yj > y):
+            x_at_y = (xj - xi) * (y - yi) / (yj - yi) + xi
+            if x < x_at_y:
+                inside = not inside
+        j = i
+    return inside
+
+
 class HouseMark(unittest.TestCase):
     def setUp(self):
         self.body = mark.house_body()
@@ -87,6 +107,13 @@ class HouseMark(unittest.TestCase):
         self.assertLessEqual(abs(w - h) / max(w, h), 0.03)
 
     def test_ink_balance_between_the_two_orbits(self):
+        """Summed polygon area is a stdlib proxy for spec 2.2's own metric
+        (near-match PIXEL COUNT at 512 px) -- this file has no renderer.
+        The proxy overcounts: brush() draws bristles as separate, mutually
+        overlapping polygons, so overlapping bristles are double- (or
+        n-times-) counted here in a way a rendered pixel count would not
+        be. Both orbits share the same bristle count and layout, so the
+        overcounting should bias both sides alike."""
         ink, colour = group_areas(self.body)
         self.assertGreaterEqual(min(ink, colour) / max(ink, colour), 0.9)
 
@@ -99,6 +126,61 @@ class HouseMark(unittest.TestCase):
         svg = mark.house_mark_svg()
         self.assertIn('viewBox="0 0 128 128"', svg)
         self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', svg)
+
+    def test_spectrum_is_spread_by_arc_length(self):
+        """spectrum_stops() positions are fractions of CURVE PARAMETER, but
+        the spec (2.4) means them as fractions of ARC LENGTH. Feeding them
+        to brush() unconverted keys colour on parameter fraction, and a
+        spiral's outer quarter runs about eight times the length of its
+        inner one (the same skew arc_param exists to correct for voice
+        splits, BUG-3) -- so a hue meant to sit at arc-length fraction u
+        actually renders at curve-parameter fraction u (identity), not at
+        the curve-parameter fraction arc_param(colour) maps u to.
+
+        Black-box, through mark.house_body() alone: for a handful of arc-
+        length fractions, find the rendered path whose fill is nearest
+        spectrum(u) (colour distance ~0-2/255, i.e. essentially exact),
+        take its centroid, find the nearest point on the colour orbit, and
+        read off that point's curve-parameter fraction ("actual"). Assert
+        actual tracks to_param(u) (arc-length-correct) rather than sitting
+        at identity (u itself, the unfixed behaviour) -- measured gaps:
+        unfixed, actual sits within 0.06 of identity and 0.15-0.20 from
+        to_param(u); fixed, actual sits within 0.06 of to_param(u).
+
+        A polygon-area-per-hue-sextant version was tried first and
+        abandoned: classifying each path's fill against the nearest of six
+        spectrum(i/6+1/12) centres and summing area per bin measures ~0.22
+        both before AND after this fix (RGB-nearest is itself non-uniform
+        around the hue circle -- even a perfectly arc-length-uniform
+        synthetic sweep only clears ~0.67 under it), and nearest-hue-ANGLE
+        classification gives 0.36 before but only 0.19 AFTER -- worse,
+        because HOUSE_W's taper is keyed to curve parameter, and stops
+        that used to sample it evenly now concentrate whichever slice of
+        parameter space their arc-length-uniform span happens to land on.
+        Neither area measure discriminates the defect this fix actually
+        corrects, so this test checks stop PLACEMENT instead."""
+        colour, _ = mark.two_orbits()
+        to_param = mark.arc_param(colour)
+        colour_group = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)[1]
+        paths = re.findall(r'<path d="([^"]+)" fill="(#[0-9a-f]{6})"/>', colour_group)
+        self.assertGreater(len(paths), 0)
+
+        def actual_param(u):
+            target = mark._rgb(mark.spectrum(u))
+            best_d, best_path = min(
+                ((sum((mark._rgb(fill)[c] - target[c]) ** 2 for c in range(3)), d)
+                 for d, fill in paths), key=lambda x: x[0])
+            pts = coords(best_path)
+            cx = sum(p[0] for p in pts) / len(pts)
+            cy = sum(p[1] for p in pts) / len(pts)
+            nearest_i = min(range(len(colour)), key=lambda i: math.dist(colour[i], (cx, cy)))
+            return nearest_i / (len(colour) - 1)
+
+        for u in (0.1, 0.3, 0.5):
+            actual = actual_param(u)
+            self.assertLessEqual(abs(actual - to_param(u)), 0.08,
+                                  f"u={u}: actual param {actual:.3f} is not close to "
+                                  f"the arc-length-correct {to_param(u):.3f}")
 
 
 class Icon(unittest.TestCase):
@@ -141,6 +223,34 @@ class Icon(unittest.TestCase):
 
     def test_house_icon_svg_carries_the_ground(self):
         self.assertIn(mark.ICON_GROUND, mark.house_icon_svg())
+
+    def test_bands_butt_with_no_gap(self):
+        """_bands() gives band k the index range [int(N*to_param(k/n)),
+        int(N*to_param((k+1)/n))) -- a half-open range whose end exactly
+        equals the next band's start, so the two never overlap. Between the
+        last centreline sample band k actually draws (index i1-1) and the
+        first sample band k+1 draws (index i1), a real sliver of arc length
+        is claimed by NEITHER polygon's cap: at 180 px and above it shows
+        through to the ink loop or the ground. Fixed by extending every
+        band but the last forward by two samples so the next band -- drawn
+        after, and so painted on top where they now overlap -- covers the
+        join. For each boundary between consecutive bands, the midpoint
+        between the two adjacent centreline samples (the geometric location
+        of the seam, not a vertex of either polygon) must lie inside at
+        least one band's polygon."""
+        colour, _ = mark.two_loops()
+        to_param = mark.arc_param(colour)
+        n = len(mark.ICON_BANDS)
+        colour_group = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)[1]
+        band_polys = [coords(d) for d in re.findall(r' d="([^"]+)"', colour_group)]
+        for k in range(1, n):
+            i1 = min(int(len(colour) * to_param(k / n)), len(colour) - 1)
+            i0 = max(i1 - 1, 0)
+            pt = ((colour[i0][0] + colour[i1][0]) / 2, (colour[i0][1] + colour[i1][1]) / 2)
+            self.assertTrue(
+                any(_point_in_polygon(pt, poly) for poly in band_polys),
+                f"boundary {k} seam midpoint {pt} (between samples {i0} and {i1}) "
+                f"is not covered by any band polygon")
 
 
 class ProductMarks(unittest.TestCase):

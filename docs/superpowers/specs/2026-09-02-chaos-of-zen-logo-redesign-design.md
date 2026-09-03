@@ -73,6 +73,8 @@ spectrum(u) = oklch(L = 0.70, C = 0.15, H = (20 + 360·u) mod 360)      u ∈ [0
 
 converted to sRGB hex at generation time (gamut-clipped per channel). `L` and `C` are the means of the four voice colours' oklch values, so the sweep sits at the voices' own lightness. Orbit B is `ink` (`#eceaf2` on dark, `#12121a` on light).
 
+The 24 stop positions are fractions of arc length, but `brush()` keys colour on curve-parameter fraction, and a spiral's outer quarter runs about eight times the length of its inner one (§7.4 BUG-3's skew). `house_body()` therefore maps every stop position through `arc_param(A)` before handing the stop list to `brush()` — `to_param(p)` for each `(p, colour)` pair — so a stop meant to sit at arc-length fraction `p` actually renders at the curve-parameter fraction where that much arc length has accumulated, not at `p` itself.
+
 ### 2.5 Layering
 
 ```svg

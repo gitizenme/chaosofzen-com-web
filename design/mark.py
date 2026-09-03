@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import re
 import sys
 from pathlib import Path
 
@@ -174,14 +173,6 @@ def ramp(stops, t: float) -> str:
     return stops[-1][1]
 
 
-def house_stops(ink: str, feather: float = 0.10):
-    """The house mark carries every voice, in the order the score lists them."""
-    w = max(feather, 0.04)
-    return [(0, ink), (.30, ink), (.30 + w, TEAL), (.52, TEAL),
-            (.52 + w, SAGE), (.68, SAGE), (.68 + w, AMBER),
-            (.84, AMBER), (.84 + w, VERMILION), (1, VERMILION)]
-
-
 def single_stops(ink: str, colour: str, at: float = 0.84, feather: float = 0.26):
     """One handover: ink into a single accent, centred at `at`."""
     return [(0, ink), (at - feather / 2, ink), (at + feather / 2, colour), (1, colour)]
@@ -296,7 +287,14 @@ def _ink_layer(inkorb, ink: str = INK_ON_DARK) -> str:
 
 def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
     colour, inkorb = two_orbits()
-    stops = stops or spectrum_stops()
+    # spectrum_stops() positions its 24 stops as fractions of CURVE PARAMETER;
+    # brush() also keys colour on curve-parameter fraction, so mapping each
+    # stop through arc_param is what actually spends them along ARC LENGTH,
+    # per spec 2.4. Left unconverted, a spiral's slow inner turns (BUG-3's
+    # skew) soak up most of the ink: hues 20-80 measured 7% against hues
+    # 320-380's 29%, a 0.25 balance (test_mark.test_spectrum_is_spread_by_arc_length).
+    to_param = arc_param(colour)
+    stops = [(to_param(p), c) for p, c in (stops or spectrum_stops())]
     return layered(_ink_layer(inkorb, ink),
                    brush(colour, HOUSE_W, stops, seed0=.31, chunk=8, **WET))
 
@@ -334,13 +332,27 @@ def _solid(loop, stops) -> str:
 
 
 def _bands(loop, colours) -> str:
-    """One path per band, so a band never straddles a colour boundary."""
+    """One path per band, so a band never straddles a colour boundary.
+
+    A band's index range is half-open, [i0, i1), and the next band's i0 is
+    the same i1 -- so two adjacent bands never overlap. Between the last
+    centreline sample one band actually draws and the first sample the next
+    one draws there is a real sliver of arc length that belongs to neither
+    polygon's cap; at 180 px and above it shows through to the ink loop or
+    the ground (test_mark.test_bands_butt_with_no_gap). Every band but the
+    last is extended forward by two samples so the next band -- drawn
+    after, and so painted on top of the overlap -- covers the join."""
     to_param = arc_param(loop)
     n = len(colours)
-    return ''.join(brush(loop, ICON_LOOP_W, [(0, c), (1, c)], bristles=1, dry=0.0,
-                         wobble=0.0, chunk=len(loop) + 1,
-                         lo=to_param(k / n), hi=to_param((k + 1) / n))
-                   for k, c in enumerate(colours))
+    paths = []
+    for k, c in enumerate(colours):
+        lo = to_param(k / n)
+        hi = to_param((k + 1) / n)
+        if k < n - 1:
+            hi = min(1.0, hi + 2.0 / len(loop))
+        paths.append(brush(loop, ICON_LOOP_W, [(0, c), (1, c)], bristles=1, dry=0.0,
+                           wobble=0.0, chunk=len(loop) + 1, lo=lo, hi=hi))
+    return ''.join(paths)
 
 
 def icon_body(colour_loop, ink_loop, colours, ink: str) -> str:
@@ -355,9 +367,6 @@ def house_icon(ink: str = INK_ON_DARK) -> str:
 # --------------------------------------------------------------------------
 # The brush
 # --------------------------------------------------------------------------
-BREATH = lambda t: 2.4 + 8.8 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
-
-
 def brush(pts, width_of, stops, *, bristles: int = 6, dry: float = 0.8,
           wobble: float = 0.55, seed0: float = 0.31,
           lo: float = 0.0, hi: float = 1.0, chunk: int = 6) -> str:
