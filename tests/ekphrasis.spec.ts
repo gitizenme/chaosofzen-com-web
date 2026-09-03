@@ -76,7 +76,12 @@ test('a positive amount routes to the checkout wired to the placeholder, and dow
   expect(anyDownload).toBe(false);
 });
 
-test('the thank-you page auto-starts the Ekphrasis dmg, never Seriatim’s', async ({ page }) => {
+// Until there is a checkout, nobody can have arrived at the thank-you page from
+// a purchase, and the dmg it used to auto-navigate to does not exist -- so the
+// page must not navigate anywhere. This is the assertion that has to change the
+// day gitizenme/ekphrasis#28 lands, and its replacement is the one above it in
+// git history: auto-starts, and to the Ekphrasis dmg rather than Seriatim's.
+test('the thank-you page starts no download while there is nothing to have bought', async ({ page }) => {
   const downloads: string[] = [];
   await page.route('**/*.dmg', route => {
     downloads.push(route.request().url());
@@ -84,9 +89,36 @@ test('the thank-you page auto-starts the Ekphrasis dmg, never Seriatim’s', asy
   });
 
   await page.goto('/ekphrasis/thanks');
-  await expect(page.getByTestId('thanks-download')).toHaveAttribute('href', EKPHRASIS_DMG);
+  await expect(page.getByTestId('thanks-unreleased')).toBeVisible();
+  await expect(page.getByTestId('thanks-download')).toHaveCount(0);
   await expect(page.locator(`a[href="${SERIATIM_DMG}"]`)).toHaveCount(0);
+  await expect(page.locator(`a[href="${EKPHRASIS_DMG}"]`)).toHaveCount(0);
 
-  await expect.poll(() => downloads.length, { timeout: 5000 }).toBe(1);
-  expect(downloads[0]).toBe(EKPHRASIS_DMG);
+  // The auto-start it used to do fired at 1200ms. Wait past that, then assert
+  // the page is still the page.
+  await page.waitForTimeout(2500);
+  expect(downloads).toEqual([]);
+  expect(new URL(page.url()).pathname.replace(/\/$/, '')).toBe('/ekphrasis/thanks');
+});
+
+// Every one of the five pages is in the sitemap, so search lands people
+// directly on any of them. Three of them used to read as documentation for a
+// shipping product: the manual said "Open the downloaded .dmg", the thank-you
+// page said "your download should start in a moment", and the changelog said
+// nothing either way. One sentence, checked verbatim on all five, so deleting
+// it from any one of them fails here.
+test('every Ekphrasis page states the release status', async ({ page }) => {
+  for (const path of EKPHRASIS_PAGES) {
+    await page.goto(path);
+    const body = await page.locator('main').innerText();
+    expect(body, path).toContain('Ekphrasis is not released yet.');
+  }
+});
+
+test('the download page metadata does not promise a product that does not exist', async ({ page }) => {
+  // What a search result and a social card render. The page body was already
+  // scrupulous; these two strings were not.
+  await page.goto('/ekphrasis/download');
+  await expect(page.locator('meta[name="description"]'))
+    .toHaveAttribute('content', /not released yet/i);
 });

@@ -1,29 +1,65 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { PRODUCTS } from '../../lib/products';
+import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from '../../lib/products';
+
+// This is where Lemon Squeezy sends someone after a purchase. Ekphrasis has no
+// Lemon Squeezy product (gitizenme/ekphrasis#28), so nobody can have arrived
+// here from one -- and there is no dmg behind the download url either, so the
+// auto-start this page was written for would hand a visitor a browser error
+// page with no explanation. It is the most misleading of the five Ekphrasis
+// pages as long as it says "your download should start in a moment".
+//
+// So the page's behaviour is driven by the one value that has to change
+// deliberately, rather than by a comment asking a future person to remember:
+// when the placeholder is replaced by a real checkout UUID, the purchase this
+// page thanks people for can happen, and the auto-start and the direct link
+// come back with it. Note that a checkout existing is not the same as the dmg
+// existing (gitizenme/ekphrasis#39 and the /ekphrasis/* publish) -- check that
+// too before shipping the id.
+const purchasable = PRODUCTS.ekphrasis.variantId !== PLACEHOLDER_VARIANT_ID;
 ---
 <Base
   title="Thanks — Chaos of Zen"
-  description="Thanks for supporting Ekphrasis. Your download starts automatically."
+  description={purchasable
+    ? 'Thanks for supporting Ekphrasis. Your download starts automatically.'
+    : 'Ekphrasis is not released yet: there is nothing to buy and no build to download.'}
 >
   <h1 data-testid="thanks-heading">Thank you</h1>
 
-  <p>
-    Your download should start in a moment. If it doesn't,
-    <a href={PRODUCTS.ekphrasis.downloadUrl} data-testid="thanks-download">download Ekphrasis directly</a>.
-  </p>
+  {purchasable ? (
+    <>
+      <p>
+        Your download should start in a moment. If it doesn't,
+        <a
+          href={PRODUCTS.ekphrasis.downloadUrl}
+          data-testid="thanks-download"
+          data-autostart
+        >download Ekphrasis directly</a>.
+      </p>
+      <p>Your receipt will arrive by email from Lemon Squeezy.</p>
+    </>
+  ) : (
+    <p data-testid="thanks-unreleased">
+      <strong>Ekphrasis is not released yet.</strong> This is where a purchase
+      would send you, but there is no Ekphrasis product to buy and no build
+      behind the download — so nothing starts automatically here, and there is
+      nothing to download. If you reached this page some other way, nothing has
+      gone wrong and you have not been charged.
+    </p>
+  )}
 
-  <p>Your receipt will arrive by email from Lemon Squeezy.</p>
-
-  <p><a href="/ekphrasis/manual">Installation guide</a></p>
+  <p><a href="/ekphrasis">About Ekphrasis</a> · <a href="/ekphrasis/manual">Installation guide</a></p>
 </Base>
 
 <script>
-  import { PRODUCTS } from '../../lib/products';
-
-  // Best-effort auto-start for the common case; the visible link above is
-  // the real fallback for a browser that blocks this navigation.
-  window.setTimeout(() => {
-    window.location.href = PRODUCTS.ekphrasis.downloadUrl;
-  }, 1200);
+  // The url comes from the element, not an import -- the same reason
+  // VersionBadge reads its manifest url off the DOM. It also means there is
+  // exactly one condition deciding whether this page auto-navigates: whether
+  // the link above rendered at all.
+  const link = document.querySelector<HTMLAnchorElement>('[data-autostart]');
+  if (link) {
+    // Best-effort auto-start for the common case; the visible link is the real
+    // fallback for a browser that blocks this navigation.
+    window.setTimeout(() => { window.location.href = link.href; }, 1200);
+  }
 </script>

@@ -9,11 +9,14 @@ const rendered = await Promise.all(entries.map(e => render(e)));
 ---
 <Base
   title="Changelog — Ekphrasis"
-  description="Release history for Ekphrasis."
+  description="Release history for Ekphrasis, which has not published a release yet."
 >
   <h1>Changelog</h1>
   {entries.length === 0 && (
-    <p>No releases yet. Ekphrasis has not shipped a version to write about.</p>
+    <p>
+      <strong>Ekphrasis is not released yet.</strong> There are no releases to
+      write about; this page is where they will appear.
+    </p>
   )}
   {entries.map((entry, i) => {
     const { Content } = rendered[i];
