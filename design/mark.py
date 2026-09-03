@@ -737,6 +737,7 @@ ASSETS = {
     "public/marks/ekphrasis-icon.svg": ekphrasis_icon_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
+    "public/marks/field.svg": hero_field_svg,
     "design/store/logo.svg": store_logo_svg,
     "design/store/favicon.svg": store_favicon_svg,
     "design/store/product-seriatim.svg": store_product_svg,
