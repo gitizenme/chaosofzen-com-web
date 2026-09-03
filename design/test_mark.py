@@ -101,5 +101,47 @@ class HouseMark(unittest.TestCase):
         self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', svg)
 
 
+class Icon(unittest.TestCase):
+    def setUp(self):
+        self.body = mark.house_icon()
+
+    def test_each_loop_is_one_path(self):
+        groups = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0].count("<path"), 1)          # ink loop
+        self.assertEqual(groups[1].count("<path"), 3)          # three flat bands
+
+    def test_colour_over_ink_at_alpha(self):
+        groups = re.findall(r"<g([^>]*)>", self.body)
+        self.assertNotIn("opacity", groups[0])
+        self.assertIn(f'opacity="{mark.HOUSE_ALPHA}"', groups[1])
+
+    def test_three_bands_are_the_specified_hues(self):
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)[1]
+        fills = re.findall(r'fill="(#[0-9a-f]{6})"', colour)
+        self.assertEqual(fills, mark.ICON_BANDS)
+
+    def test_no_feather_no_dry(self):
+        # every band is one uninterrupted polygon: no lifts, no chunk seams
+        colour = re.findall(r"<g[^>]*>(.*?)</g>", self.body, re.S)[1]
+        for d in re.findall(r' d="([^"]+)"', colour):
+            self.assertGreater(len(coords(d)), 20)
+
+    def test_fits_the_macos_ground_rect(self):
+        # ICON_GROUND covers 12.5..115.5; the stroke must stay on it
+        x0, y0, x1, y1 = bbox(coords(self.body))
+        self.assertGreaterEqual(min(x0, y0), 12.5)
+        self.assertLessEqual(max(x1, y1), 115.5)
+
+    def test_favicon_takes_current_color(self):
+        svg = mark.favicon_svg()
+        self.assertIn('fill="currentColor"', svg)
+        self.assertNotIn(mark.INK_ON_LIGHT + '"', svg.split("<style>")[0])
+        self.assertIn("prefers-color-scheme: dark", svg)
+
+    def test_house_icon_svg_carries_the_ground(self):
+        self.assertIn(mark.ICON_GROUND, mark.house_icon_svg())
+
+
 if __name__ == "__main__":
     unittest.main()

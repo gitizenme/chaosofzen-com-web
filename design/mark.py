@@ -295,6 +295,57 @@ def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
 
 
 # --------------------------------------------------------------------------
+# The icon: two outer loops, colour outside over ink inside.
+#
+# Not a taijitu. Shorter integration so only the outer loop survives, flat
+# colour in three bands, no feather (BUG-4: the feather is what breaks a mark
+# at 16 px), no dryness, and each loop emitted as ONE path so no chunk seam
+# shows through the alpha. Fitted with the house margin; ICON_SCALE keeps the
+# stroke on the macOS ground rect (BUG-5), which test_mark.Icon checks.
+# --------------------------------------------------------------------------
+ICON_SCALE = 0.78
+ICON_OFFSET = (4.0, 3.0)
+ICON_LOOP_W = lambda t: 7.0 + 5.0 * math.sin(math.pow(t, .6) * math.pi)
+ICON_BANDS = [spectrum(0.125 * 0.75), spectrum(0.375 * 0.75), spectrum(0.625 * 0.75)]
+
+
+def two_loops():
+    """(colour_loop, ink_loop). The colour loop is the rotated copy, placed
+    at +offset so it sits OUTSIDE the ink loop; the ink loop is unrotated at
+    -offset, inside."""
+    loop = fit_one(rossler(t_end=11.0, step=6), margin=13.0)
+    cx, cy = VIEWBOX / 2, VIEWBOX / 2
+    colour = place(loop, (cx + ICON_OFFSET[0], cy + ICON_OFFSET[1]), ICON_SCALE, math.pi)
+    ink = place(loop, (cx - ICON_OFFSET[0], cy - ICON_OFFSET[1]), ICON_SCALE, 0.0)
+    return colour, ink
+
+
+def _solid(loop, stops) -> str:
+    # bristles=1, dry=0, chunk beyond the point count: one run, one path
+    return brush(loop, ICON_LOOP_W, stops, bristles=1, dry=0.0, wobble=0.0,
+                 chunk=len(loop) + 1)
+
+
+def _bands(loop, colours) -> str:
+    """One path per band, so a band never straddles a colour boundary."""
+    to_param = arc_param(loop)
+    n = len(colours)
+    return ''.join(brush(loop, ICON_LOOP_W, [(0, c), (1, c)], bristles=1, dry=0.0,
+                         wobble=0.0, chunk=len(loop) + 1,
+                         lo=to_param(k / n), hi=to_param((k + 1) / n))
+                   for k, c in enumerate(colours))
+
+
+def icon_body(colour_loop, ink_loop, colours, ink: str) -> str:
+    return layered(_solid(ink_loop, [(0, ink), (1, ink)]), _bands(colour_loop, colours))
+
+
+def house_icon(ink: str = INK_ON_DARK) -> str:
+    colour, inkloop = two_loops()
+    return icon_body(colour, inkloop, ICON_BANDS, ink)
+
+
+# --------------------------------------------------------------------------
 # The brush
 # --------------------------------------------------------------------------
 BREATH = lambda t: 2.4 + 8.8 * math.sin(math.pow(min(t * 1.06, 1), .8) * math.pi)
@@ -368,58 +419,17 @@ def brush(pts, width_of, stops, *, bristles: int = 6, dry: float = 0.8,
 # --------------------------------------------------------------------------
 # Assets
 # --------------------------------------------------------------------------
-def reduced_body(ink_emit: str) -> str:
-    """The house mark at reduced fidelity, for anything that renders small.
-
-    Shorter integration (t_end 13.2), three filaments rather than six, and the
-    colour ramp QUANTISED to five flat fills. `ink_emit` is what the ink snaps
-    to -- "currentColor" for the site favicon, a literal for a raster that has
-    to carry its own ink.
-
-    BUG-6: THE QUANTISATION IS A LEGIBILITY MECHANISM, NOT A COMPRESSION ONE.
-    It was introduced to get public/favicon.svg from 33 KB to 4.7 KB and this
-    docstring used to say only that. Measured at 32 px by design/measure_icon.py,
-    the same geometry WITHOUT the snap scores 3 of 4 voices with amber at zero
-    pixels; with it, 4 of 4 and amber at 25. It is doing exactly the job that
-    dropping the feather does for seriatim_icon() -- section 4.5's finding that
-    a voice's ink half and its pigment half average into a midtone that
-    classifies as neither. Flattening each run to the nearest voice is the same
-    remedy applied to a mark that cannot give up its feather, because feathering
-    through all four voices is what the house mark IS (section 4.3).
-
-    So: nothing that renders below about 64 px may take the unquantised ramp.
-    """
-    palette = [INK_ON_LIGHT] + VOICE
-
-    def snap(hexcol: str) -> str:
-        target = _rgb(hexcol)
-        best = min(palette, key=lambda c: sum((a - b) ** 2 for a, b in zip(_rgb(c), target)))
-        return ink_emit if best == INK_ON_LIGHT else best
-
-    stops = [(0, INK_ON_LIGHT), (.30, INK_ON_LIGHT), (.40, TEAL), (.52, TEAL),
-             (.62, SAGE), (.68, SAGE), (.78, AMBER), (.84, AMBER),
-             (.94, VERMILION), (1, VERMILION)]
-    orbit = fit_one(rossler(t_end=13.2, step=24))
-    body = brush(orbit, BREATH_SMALL, stops, bristles=3, dry=.45, wobble=.4, chunk=24)
-    body = re.sub(r'fill="(#[0-9a-f]{6})"', lambda m: f'fill="{snap(m.group(1))}"', body)
-    body = re.sub(r'(\d+)\.\d', r'\1', body)          # integer coordinates
-    return body.replace('/><path', '/>\n  <path')
-
-
 def favicon_svg() -> str:
-    """public/favicon.svg -- reduced fidelity; never renders above 64 px.
+    """public/favicon.svg -- the icon construction; never renders above 64 px.
 
-    The ink is emitted as currentColor so one copy serves both themes, which is
-    why this file can be 4.7 KB and theme-aware at once.
+    Brushed with INK_ON_LIGHT as a sentinel and rewritten to currentColor, so
+    one file serves both themes.
     """
-    body = reduced_body("currentColor")
-
+    body = house_icon(INK_ON_LIGHT).replace(f'fill="{INK_ON_LIGHT}"', 'fill="currentColor"')
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t">
   <title id="t">Chaos of Zen</title>
-  <!-- A Rossler attractor orbit, drawn as a sumi-e stroke that feathers through
-       the four voice colours of seriatim/plugin/Source/ScoreView.cpp:7.
-       Baked at reduced fidelity: this never renders above 64 px. The ink takes
-       currentColor so one copy serves both themes. -->
+  <!-- Two outer loops of a Rossler orbit, mirrored: colour over ink. The ink
+       takes currentColor so one copy serves both themes. -->
   {body}
   <style>
     svg {{ color: {INK_ON_LIGHT}; }}
@@ -427,6 +437,11 @@ def favicon_svg() -> str:
   </style>
 </svg>
 '''
+
+
+def house_icon_svg() -> str:
+    """The macOS icon: the icon construction on the rounded-rect ground."""
+    return _svg(ICON_GROUND + house_icon(INK_ON_DARK), "Chaos of Zen")
 
 
 # --------------------------------------------------------------------------
@@ -608,18 +623,9 @@ def store_logo_svg() -> str:
 
 
 def store_favicon_svg() -> str:
-    """The storefront tab icon. Rasterised to 32 px.
-
-    reduced_body() -- the same construction the site favicon uses -- with the
-    ink baked to #eceaf2 and an opaque ground, because neither of
-    favicon_svg()'s two tricks (currentColor, a theme-switching <style> block)
-    survives being uploaded to a third party as a flat PNG.
-
-    Measured at 32 px: 4 of 4 voices. The full mark scores 2 of 4 there and
-    this construction WITHOUT reduced_body()'s quantisation scores 3 of 4 --
-    see BUG-6 and spec.md section 7.4.
-    """
-    return _svg(STORE_GROUND + reduced_body(INK_ON_DARK), "Chaos of Zen")
+    """The storefront tab icon. Rasterised to 32 px. The icon construction,
+    ink baked, on the opaque store ground."""
+    return _svg(STORE_GROUND + house_icon(INK_ON_DARK), "Chaos of Zen")
 
 
 def store_product_svg() -> str:
@@ -641,6 +647,7 @@ def store_product_svg() -> str:
 ASSETS = {
     "public/favicon.svg": favicon_svg,
     "public/marks/chaos-of-zen.svg": house_mark_svg,
+    "public/marks/chaos-of-zen-icon.svg": house_icon_svg,
     "public/marks/ekphrasis.svg": ekphrasis_mark_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
