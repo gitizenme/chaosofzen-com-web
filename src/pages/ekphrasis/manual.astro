@@ -1,0 +1,54 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Manual — Ekphrasis"
+  description="How to install, find and uninstall Ekphrasis."
+>
+  <h1>Manual</h1>
+
+  <h2 id="install">Install</h2>
+  <p>
+    Open the downloaded <code>.dmg</code> and run the <code>.pkg</code>
+    installer inside. The installer places files system-wide and will ask for
+    an administrator password once. macOS 11.0 or later.
+  </p>
+
+  <h2 id="where-things-land">Where things land</h2>
+  <ul>
+    <li><code>/Library/Audio/Plug-Ins/Components/Ekphrasis.component</code> — the AU</li>
+    <li><code>/Library/Audio/Plug-Ins/VST3/Ekphrasis.vst3</code> — the VST3</li>
+    <li><code>/Applications/Ekphrasis.app</code> — the standalone app</li>
+  </ul>
+
+  <h2 id="finding-it">Finding it in your host</h2>
+  <p>
+    Hosts pick the AU and the VST3 up after a plug-in rescan; restart the host
+    if it does not offer one. Logic Pro runs its own AU validation the first
+    time it sees the component, which takes a moment and only happens once per
+    version.
+  </p>
+
+  <h2 id="uninstall">Uninstall</h2>
+  <p>
+    Mount the dmg again and run <code>Uninstall Ekphrasis.sh</code>, next to
+    the pkg. Pass <code>--yes</code> to skip the confirmation prompt. It removes
+    all three installed items and forgets the three <code>pkgutil</code>
+    receipts the installer left behind — without that second half, a later
+    reinstall reports "already installed" against files that are gone.
+  </p>
+  <p>
+    If you no longer have the dmg, remove these paths directly (the app and
+    plug-ins may also be user-level, under <code>~/Library/Audio/Plug-Ins</code>
+    instead of <code>/Library/Audio/Plug-Ins</code>):
+  </p>
+  <pre><code>sudo rm -rf "/Library/Audio/Plug-Ins/Components/Ekphrasis.component"
+sudo rm -rf "/Library/Audio/Plug-Ins/VST3/Ekphrasis.vst3"
+sudo rm -rf "/Applications/Ekphrasis.app"</code></pre>
+  <p>
+    Removing the paths by hand leaves the <code>pkgutil</code> receipts in
+    place, which is what the uninstaller script exists to avoid.
+  </p>
+
+  <p><a href="/ekphrasis/changelog">Changelog</a> · <a href="/ekphrasis/download">Download</a></p>
+</Base>

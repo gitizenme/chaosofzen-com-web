@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import { entriesFor } from '../../lib/changelog';
+
+const allEntries = await getCollection('changelog');
+const entries = entriesFor(allEntries, 'ekphrasis');
+const rendered = await Promise.all(entries.map(e => render(e)));
+---
+<Base
+  title="Changelog — Ekphrasis"
+  description="Release history for Ekphrasis."
+>
+  <h1>Changelog</h1>
+  {entries.length === 0 && (
+    <p>No releases yet. Ekphrasis has not shipped a version to write about.</p>
+  )}
+  {entries.map((entry, i) => {
+    const { Content } = rendered[i];
+    const anchor = entry.id;
+    return (
+      <section>
+        <h2 id={anchor}>
+          {entry.data.version} — {entry.data.title}
+          <span> · {entry.data.date}</span>
+        </h2>
+        <Content />
+      </section>
+    );
+  })}
+</Base>

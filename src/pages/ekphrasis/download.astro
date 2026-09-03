@@ -1,0 +1,99 @@
+---
+import Base from '../../layouts/Base.astro';
+import VersionBadge from '../../components/VersionBadge.astro';
+import { PRODUCTS } from '../../lib/products';
+
+const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
+---
+<Base
+  title="Download Ekphrasis — Chaos of Zen"
+  description="Ekphrasis is a macOS VST3/AU/Standalone image-to-sound instrument. Pay what you want, including nothing."
+>
+  <h1>Download Ekphrasis</h1>
+
+  <p>
+    <strong>Ekphrasis is not released yet.</strong> There is no public build
+    behind this page and no checkout behind this button; this is where both
+    will be. Nothing here is available today.
+  </p>
+
+  <p>
+    Pay what you want. <strong>Zero is a real option</strong> — type 0, or leave
+    the box empty, and the download starts immediately. No email, no account.
+  </p>
+
+  <form data-testid="price-form" novalidate>
+    <label for="price">What's it worth to you?</label>
+    <div>
+      <span aria-hidden="true">$</span>
+      <input
+        id="price" name="price" data-testid="price-input"
+        type="text" inputmode="decimal" autocomplete="off"
+        value={suggested} aria-describedby="price-help price-error"
+      />
+    </div>
+    <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
+    <p id="price-error" data-testid="price-error" role="alert" hidden></p>
+
+    <button type="submit" data-testid="download-button">Download for macOS</button>
+  </form>
+
+  <VersionBadge manifestUrl={PRODUCTS.ekphrasis.manifestUrl} />
+
+  <h2>Verify what you downloaded</h2>
+  <p>
+    The release pipeline publishes <code>SHA256SUMS</code> beside the dmg. It
+    names <em>both</em> <code>Ekphrasis-&lt;version&gt;.dmg</code> and
+    <code>Ekphrasis-latest.dmg</code> against the one hash, so the check works
+    whichever of the two you have. The consequence is that a bare
+    <code>shasum -c</code> exits non-zero even when your file is fine: it
+    reports the file you have as <code>OK</code> and the one you do not have as
+    missing. Ask it to skip what is absent:
+  </p>
+  <pre><code>shasum -c --ignore-missing SHA256SUMS</code></pre>
+
+  <p>macOS 11.0 or later.</p>
+
+  <p><a href="/ekphrasis/manual">Installation guide</a> · <a href="/eula">Licence</a></p>
+</Base>
+
+<script>
+  import { parsePrice } from '../../lib/price';
+  import { checkoutUrl } from '../../lib/store';
+  import { PRODUCTS } from '../../lib/products';
+
+  // Read off the product record, not off download.ts/store.ts: those modules'
+  // bare DOWNLOAD_URL and SERIATIM_VARIANT_ID exports are Seriatim's, and
+  // reusing them here is exactly the copy-paste that would sell one product
+  // and ship another.
+  const { downloadUrl, variantId } = PRODUCTS.ekphrasis;
+
+  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;
+  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]')!;
+  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]')!;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const result = parsePrice(input.value);
+
+    if (result.kind === 'invalid') {
+      error.textContent = result.reason;
+      error.hidden = false;
+      input.focus();
+      return;
+    }
+    error.hidden = true;
+
+    if (result.kind === 'free') {
+      // Straight to the file. No interstitial, no thank-you detour, no
+      // "consider donating" nag -- the person already answered that question.
+      window.location.href = downloadUrl;
+      return;
+    }
+
+    // The amount typed here doesn't travel to Lemon Squeezy -- their own
+    // checkout page has its own editable price field for this product
+    // (Pay What You Want). See the comment on checkoutUrl() for why.
+    window.location.href = checkoutUrl(variantId);
+  });
+</script>

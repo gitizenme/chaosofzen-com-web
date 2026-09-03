@@ -1,0 +1,38 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="Ekphrasis — a macOS image-to-sound instrument"
+  description="Ekphrasis is a macOS VST3/AU/Standalone instrument that reads an image as a spectrogram — brightness becomes amplitude, height becomes frequency — and resynthesizes it into sound."
+>
+  <h1>Ekphrasis</h1>
+  <p class="text-lg">
+    An instrument that reads a picture as a spectrogram and plays it back as
+    sound.
+  </p>
+
+  <h2>How it reads an image</h2>
+  <p>
+    A spectrogram is a picture of a sound: time runs left to right, frequency
+    runs bottom to top, and brightness is how much energy is there. Ekphrasis
+    takes any image and reads it as though it were one — a pixel's
+    <strong>vertical position</strong> sets a partial's frequency, its
+    <strong>brightness</strong> sets that partial's amplitude — then
+    resynthesizes the result. The picture becomes something you can play.
+  </p>
+
+  <h2>What you get</h2>
+  <ul>
+    <li>VST3, AU, and a standalone app</li>
+  </ul>
+
+  <h2>Requirements</h2>
+  <p>macOS 11.0 or later.</p>
+
+  <h2>Status</h2>
+  <p>
+    Ekphrasis is in development. There is no public build yet, and nothing on
+    this site claims otherwise — when there is one, it will appear on the
+    <a href="/ekphrasis/download">download page</a>.
+  </p>
+</Base>
