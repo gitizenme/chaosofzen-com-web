@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { entriesFor, changelogAnchor } from './changelog';
 import type { ProductSlug } from './products';
 
@@ -134,21 +134,31 @@ describe('changelogAnchor', () => {
     expect(changelogAnchor(version)).toBe(expected);
   });
 
-  // The live-inbound-link guarantee. Every anchor Seriatim has ever published
-  // was the entry's FILENAME; the anchor is now derived from its version
-  // instead, so this asserts against the real content directory that the two
-  // agree for every entry that exists -- i.e. that the change moved no
-  // published anchor. A future entry whose filename and version disagree fails
-  // here, which is the moment to check what links to it.
-  it('agrees with every existing entry filename, so no published anchor moved', () => {
+  // The live-inbound-link guarantee, and ONLY that. Every anchor Seriatim has
+  // published so far was the entry's FILENAME; the anchor now comes from the
+  // entry's version instead, so each of those anchors must still resolve or an
+  // existing link breaks.
+  //
+  // This list is deliberately frozen rather than globbed. Globbing the content
+  // directory would assert filename === anchor for every entry that ever
+  // exists, which is the opposite of what deriving the anchor from the version
+  // was for: both products share this one flat directory, so the first
+  // Ekphrasis entry for a version Seriatim already used CANNOT reuse the
+  // filename -- it will be named something else, and its anchor will rightly
+  // disagree with its filename. A globbed assertion would fail on precisely
+  // the case this change exists to make safe.
+  //
+  // Add to this list when an anchor becomes publicly linked, not when a file
+  // appears.
+  const PUBLISHED_ANCHORS = [
+    'v1-1-0', 'v1-1-1', 'v1-4-0', 'v1-4-1', 'v1-4-2', 'v1-4-3', 'v1-5-0',
+  ];
+
+  it.each(PUBLISHED_ANCHORS)('%s still resolves to the same anchor', anchor => {
     const dir = new URL('../content/changelog/', import.meta.url);
-    const files = readdirSync(dir).filter(f => f.endsWith('.md'));
-    expect(files.length).toBeGreaterThan(0);
-    for (const file of files) {
-      const front = readFileSync(new URL(file, dir), 'utf8');
-      const version = front.match(/^version:\s*['"]?([^'"\n]+?)['"]?\s*$/m)?.[1];
-      expect(version, `${file} has a version`).toBeTruthy();
-      expect(changelogAnchor(version!), file).toBe(file.replace(/\.md$/, ''));
-    }
+    const front = readFileSync(new URL(`${anchor}.md`, dir), 'utf8');
+    const version = front.match(/^version:\s*['"]?([^'"\n]+?)['"]?\s*$/m)?.[1];
+    expect(version, `${anchor}.md has a version`).toBeTruthy();
+    expect(changelogAnchor(version!)).toBe(anchor);
   });
 });
