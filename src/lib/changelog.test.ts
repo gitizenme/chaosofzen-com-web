@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { entriesFor, type ProductSlug } from './changelog';
+import { readdirSync, readFileSync } from 'node:fs';
+import { entriesFor, changelogAnchor, type ProductSlug } from './changelog';
 
 const entries: { data: { product: ProductSlug; version: string; title: string; date: string } }[] = [
   { data: { product: 'seriatim', version: '1.5.0', title: 'a', date: '2026-08-28' } },
@@ -116,5 +117,37 @@ describe('entriesFor', () => {
     ];
     expect(entriesFor(junk, 'seriatim').map(e => e.data.version)).toEqual(['2.0.0', '1.0.0', 'abc']);
     expect(entriesFor([...junk].reverse(), 'seriatim').map(e => e.data.version)).toEqual(['2.0.0', '1.0.0', 'abc']);
+  });
+});
+
+describe('changelogAnchor', () => {
+  // The literal on the right is the plugin's `${version//./-}` written out by
+  // hand. Deriving it here from the same expression the implementation uses
+  // would assert nothing.
+  it.each([
+    ['1.5.0', 'v1-5-0'],
+    ['0.1.0', 'v0-1-0'],
+    ['1.4.0-rc1', 'v1-4-0-rc1'],
+    ['2.0', 'v2-0'],
+  ])('%s -> %s', (version, expected) => {
+    expect(changelogAnchor(version)).toBe(expected);
+  });
+
+  // The live-inbound-link guarantee. Every anchor Seriatim has ever published
+  // was the entry's FILENAME; the anchor is now derived from its version
+  // instead, so this asserts against the real content directory that the two
+  // agree for every entry that exists -- i.e. that the change moved no
+  // published anchor. A future entry whose filename and version disagree fails
+  // here, which is the moment to check what links to it.
+  it('agrees with every existing entry filename, so no published anchor moved', () => {
+    const dir = new URL('../content/changelog/', import.meta.url);
+    const files = readdirSync(dir).filter(f => f.endsWith('.md'));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const front = readFileSync(new URL(file, dir), 'utf8');
+      const version = front.match(/^version:\s*['"]?([^'"\n]+?)['"]?\s*$/m)?.[1];
+      expect(version, `${file} has a version`).toBeTruthy();
+      expect(changelogAnchor(version!), file).toBe(file.replace(/\.md$/, ''));
+    }
   });
 });

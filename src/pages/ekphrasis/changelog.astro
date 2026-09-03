@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection, render } from 'astro:content';
-import { entriesFor } from '../../lib/changelog';
+import { entriesFor, changelogAnchor } from '../../lib/changelog';
 
 const allEntries = await getCollection('changelog');
 const entries = entriesFor(allEntries, 'ekphrasis');
@@ -17,7 +17,8 @@ const rendered = await Promise.all(entries.map(e => render(e)));
   )}
   {entries.map((entry, i) => {
     const { Content } = rendered[i];
-    const anchor = entry.id;
+    // From the version, not entry.id -- see changelogAnchor's comment.
+    const anchor = changelogAnchor(entry.data.version);
     return (
       <section>
         <h2 id={anchor}>

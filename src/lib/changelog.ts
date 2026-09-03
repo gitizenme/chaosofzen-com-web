@@ -63,3 +63,24 @@ export function entriesFor<
       return dateCmp !== 0 ? dateCmp : compareVersionDescending(a.data.version, b.data.version);
     });
 }
+
+// The heading id a release's notes link points at. Derived from the VERSION,
+// never from the entry's filename.
+//
+// This is one half of a contract that spans two repositories: the plugin's
+// release script emits `notes_url` as `.../changelog#v${version//./-}`. The
+// other half used to be `entry.id`, i.e. the markdown file's name -- which
+// agrees with the version only for as long as every file happens to be named
+// after it. Both products' entries share ONE flat src/content/changelog/
+// directory (the collection discriminates on a `product` field, deliberately,
+// rather than on a filename convention), so the first Ekphrasis release of a
+// version Seriatim already shipped cannot use the name it wants. Renaming it
+// would move a filename-derived anchor to something notes_url does not
+// mention -- while the id notes_url DOES mention still exists, on the other
+// product's page. The release would land silently at the top of the page.
+//
+// The transform is `${version//./-}` exactly, case included, so the two
+// repositories cannot disagree about an anchor for a version like 1.0.0-RC1.
+export function changelogAnchor(version: string): string {
+  return `v${version.replaceAll('.', '-')}`;
+}
