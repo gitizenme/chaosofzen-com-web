@@ -287,10 +287,16 @@ def layered(ink_body: str, colour_body: str, alpha: float = HOUSE_ALPHA) -> str:
     return f'<g>{ink_body}</g><g opacity="{alpha}">{colour_body}</g>'
 
 
+def _ink_layer(inkorb, ink: str = INK_ON_DARK) -> str:
+    """The ink orbit every mark shares -- one definition, so the marks are
+    siblings by construction and test_mark.ProductMarks can assert byte identity."""
+    return brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET)
+
+
 def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
     colour, inkorb = two_orbits()
     stops = stops or spectrum_stops()
-    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+    return layered(_ink_layer(inkorb, ink),
                    brush(colour, HOUSE_W, stops, seed0=.31, chunk=8, **WET))
 
 
@@ -470,7 +476,7 @@ def ekphrasis_mark(ink: str = INK_ON_DARK) -> str:
     teal handover, stroke width as image brightness. Same skeleton as the
     house mark; only the colour orbit's stops and width change."""
     colour, inkorb = two_orbits()
-    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+    return layered(_ink_layer(inkorb, ink),
                    brush(colour, IMAGE_W, single_stops(ink, TEAL), bristles=6, dry=.28,
                          wobble=.45, chunk=8))
 
@@ -508,7 +514,7 @@ def seriatim_mark(ink: str = INK_ON_DARK, voices: int = 4, gap: float = 0.12) ->
         width = (lambda l, h: lambda t: VOICE_W(min(max((t - l) / (h - l), 0), 1)))(lo, hi)
         out.append(brush(colour, width, stops, bristles=4, dry=.28, wobble=.26,
                          seed0=SEEDS[k], lo=lo, hi=hi, chunk=8))
-    return layered(brush(inkorb, HOUSE_W, [(0, ink), (1, ink)], seed0=.58, chunk=8, **WET),
+    return layered(_ink_layer(inkorb, ink),
                    ''.join(out))
 
 
