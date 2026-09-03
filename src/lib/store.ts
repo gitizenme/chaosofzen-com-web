@@ -1,3 +1,5 @@
+import { PRODUCTS } from './products';
+
 // Lemon Squeezy checkout configuration.
 //
 // SERIATIM_VARIANT_ID is the variant's checkout UUID from the product's
@@ -5,11 +7,11 @@
 // the store's test and live modes, so switching the store out of test mode
 // needs no code change here.
 export const LS_STORE_DOMAIN = 'store.chaosofzen.com';
-export const SERIATIM_VARIANT_ID = 'b6654c01-a0a8-473b-a260-bbb84d08b9ba';
+export const SERIATIM_VARIANT_ID = PRODUCTS.seriatim.variantId;
 
 // What the price field is pre-filled with. Not a floor -- 0 is accepted and
 // bypasses checkout entirely.
-export const SUGGESTED_PRICE_CENTS = 1200;
+export const SUGGESTED_PRICE_CENTS = PRODUCTS.seriatim.suggestedPriceCents;
 
 export interface CheckoutOptions {
   embed?: boolean;
