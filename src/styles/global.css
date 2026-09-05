@@ -163,4 +163,52 @@
     outline-offset: 3px;
     border-radius: var(--radius-brand);
   }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    height: 2.75rem;
+    padding-inline: 1.25rem;
+    border: none;
+    border-radius: var(--radius-brand);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 1.0625rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  @media (prefers-color-scheme: dark) {
+    .btn:hover { filter: brightness(0.92); }
+  }
+
+  .field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: 2.75rem;
+    padding-inline: 0.875rem;
+    width: 7rem;
+    box-sizing: border-box;
+    background: var(--color-canvas-raised);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-brand);
+    color: var(--color-ink);
+    font-family: var(--font-code), ui-monospace, SFMono-Regular, monospace;
+    font-size: 1.0625rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .field:focus-within { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+  .field-prefix { color: var(--color-ink-muted); }
+  .field input {
+    all: unset;
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .btn, main a:not([class]), .grid > a { transition: filter 150ms, border-color 150ms, color 150ms; }
+  }
 }

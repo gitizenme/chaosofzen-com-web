@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
+import Button from '../../components/Button.astro';
 import { PRODUCTS, isPurchasable } from '../../lib/products';
 
 // The gate that used to live in scripts/check-products.mjs, which refused to
@@ -34,20 +35,21 @@ const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
         account.
       </p>
 
-      <form data-testid="price-form" novalidate>
-        <label for="price">What's it worth to you?</label>
-        <div>
-          <span aria-hidden="true">$</span>
-          <input
-            id="price" name="price" data-testid="price-input"
-            type="text" inputmode="decimal" autocomplete="off"
-            value={suggested} aria-describedby="price-help price-error"
-          />
+      <form data-testid="price-form" novalidate class="flex flex-col gap-2">
+        <label for="price" class="font-semibold">What's it worth to you?</label>
+        <div class="flex items-center gap-3">
+          <div class="field">
+            <span class="field-prefix" aria-hidden="true">$</span>
+            <input
+              id="price" name="price" data-testid="price-input"
+              type="text" inputmode="decimal" autocomplete="off"
+              value={suggested} aria-describedby="price-help price-error"
+            />
+          </div>
+          <Button type="submit" data-testid="download-button">Download for macOS</Button>
         </div>
-        <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
-        <p id="price-error" data-testid="price-error" role="alert" hidden></p>
-
-        <button type="submit" data-testid="download-button">Download for macOS</button>
+        <p id="price-help" class="text-sm text-ink-muted !mt-0">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
+        <p id="price-error" data-testid="price-error" role="alert" hidden class="text-sm !mt-0" style="color: var(--color-voice-1);"></p>
       </form>
     </>
   )}

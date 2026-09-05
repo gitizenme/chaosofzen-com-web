@@ -1,0 +1,10 @@
+---
+interface Props extends astroHTML.JSX.AnchorHTMLAttributes, astroHTML.JSX.ButtonHTMLAttributes {
+  href?: string;
+}
+const { href, class: className, ...rest } = Astro.props;
+const classes = ['btn', className].filter(Boolean).join(' ');
+---
+{href
+  ? <a href={href} class={classes} {...rest}><slot /></a>
+  : <button class={classes} {...rest}><slot /></button>}
