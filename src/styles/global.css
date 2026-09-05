@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
 /* The palette is taken out of the plugins rather than applied to them.
    Every value below appears in the shipping source:
@@ -20,6 +19,8 @@
   /* Darkened teal, not the #29b6a8 used on dark grounds: that reads 2.24:1 here
      and this is body-size link text. #17786e clears AA at 4.73:1. */
   --color-accent: #17786e;
+  --color-on-accent: #ffffff;
+  --color-hairline: rgba(18, 18, 26, 0.10);
 
   --color-voice-1: #e4572e; /* vermilion */
   --color-voice-2: #29b6a8; /* teal      */
@@ -36,19 +37,25 @@
     --color-ink: #eceaf2;
     --color-ink-muted: #8b8b9e;
     --color-accent: #29b6a8;
+    --color-on-accent: #12121a;
+    --color-hairline: rgba(236, 234, 242, 0.10);
   }
 }
 
-@theme {
+:root { color-scheme: light dark; }
+
+@theme inline {
   --color-canvas: var(--color-canvas);
   --color-canvas-raised: var(--color-canvas-raised);
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
   --color-accent: var(--color-accent);
+  --color-on-accent: var(--color-on-accent);
   --color-voice-1: var(--color-voice-1);
   --color-voice-2: var(--color-voice-2);
   --color-voice-3: var(--color-voice-3);
   --color-voice-4: var(--color-voice-4);
+  --color-hairline: var(--color-hairline);
   --radius-brand: var(--radius-brand);
 
   /* Set by the fonts block in astro.config.mjs, which self-hosts them. */
@@ -154,6 +161,6 @@
   :focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 3px;
-    border-radius: 2px;
+    border-radius: var(--radius-brand);
   }
 }
