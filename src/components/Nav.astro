@@ -1,16 +1,19 @@
-<nav class="flex items-center justify-between px-6 py-4 text-sm">
-  <a href="/" class="flex items-center gap-2.5 font-semibold tracking-tight text-ink">
-    <!-- Served from /favicon.svg so the mark is one cached asset, not inlined
-         on every page. It carries its own light/dark handling. -->
-    <img src="/favicon.svg" alt="" width="22" height="22" class="block" />
-    Chaos of Zen
-  </a>
-  <div class="flex items-center gap-6">
-    <a href="/seriatim" class="text-ink-muted hover:text-ink">Seriatim</a>
-    <a
-      href="https://chaosofzen.dev"
-      rel="noopener"
-      class="text-ink-muted hover:text-ink"
-    >365 Strange Attractors</a>
+<nav aria-label="Primary" class="w-full">
+  <div class="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-4 text-sm">
+    <a href="/" class="flex items-center gap-2.5 font-semibold tracking-tight text-ink">
+      <!-- Served from /favicon.svg so the mark is one cached asset, not inlined
+           on every page. It carries its own light/dark handling. -->
+      <img src="/favicon.svg" alt="" width="22" height="22" class="block" />
+      Chaos of Zen
+    </a>
+    <div class="flex items-center gap-6">
+      <a href="/seriatim" class="text-ink-muted hover:text-ink" aria-current={Astro.url.pathname.startsWith('/seriatim') ? 'page' : undefined}>Seriatim</a>
+      <a href="/ekphrasis" class="text-ink-muted hover:text-ink" aria-current={Astro.url.pathname.startsWith('/ekphrasis') ? 'page' : undefined}>Ekphrasis</a>
+      <a
+        href="https://chaosofzen.dev"
+        rel="noopener"
+        class="text-ink-muted hover:text-ink"
+      >365 Strange Attractors</a>
+    </div>
   </div>
 </nav>

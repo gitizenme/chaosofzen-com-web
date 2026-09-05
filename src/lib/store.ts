@@ -1,15 +1,18 @@
 // Lemon Squeezy checkout configuration.
 //
-// SERIATIM_VARIANT_ID is the variant's checkout UUID from the product's
-// "Share / Buy" link -- NOT the numeric variant id. The UUID is stable across
-// the store's test and live modes, so switching the store out of test mode
-// needs no code change here.
+// A product's `variantId` is the variant's checkout UUID from its "Share / Buy"
+// link -- NOT the numeric variant id. The UUID is stable across the store's
+// test and live modes, so switching the store out of test mode needs no code
+// change here. `suggestedPriceCents` is what the price field is pre-filled
+// with; not a floor -- 0 is accepted and bypasses checkout entirely.
+//
+// Both live on the product record (src/lib/products.ts) and are read from it by
+// key. The SERIATIM_VARIANT_ID and SUGGESTED_PRICE_CENTS aliases that used to
+// stand here were removed when /seriatim/download, their last consumer,
+// started reading PRODUCTS.seriatim like the Ekphrasis page does: a bare
+// per-product alias on a two-product site is a value waiting to be used on the
+// wrong page.
 export const LS_STORE_DOMAIN = 'store.chaosofzen.com';
-export const SERIATIM_VARIANT_ID = 'b6654c01-a0a8-473b-a260-bbb84d08b9ba';
-
-// What the price field is pre-filled with. Not a floor -- 0 is accepted and
-// bypasses checkout entirely.
-export const SUGGESTED_PRICE_CENTS = 1200;
 
 export interface CheckoutOptions {
   embed?: boolean;

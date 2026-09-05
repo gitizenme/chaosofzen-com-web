@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { checkoutUrl, SERIATIM_VARIANT_ID } from './store';
+import { checkoutUrl } from './store';
+import { PRODUCTS } from './products';
 
 describe('checkoutUrl', () => {
   it('builds a bare checkout url', () => {
@@ -19,7 +20,11 @@ describe('checkoutUrl', () => {
     expect(url.search).toBe('');
   });
 
-  it('exports a variant id that is not a placeholder', () => {
-    expect(SERIATIM_VARIANT_ID).toMatch(/^[0-9a-f-]{36}$/);
+  // Was written against store.ts's SERIATIM_VARIANT_ID alias; it now reads the
+  // record the alias pointed at, which is the same value and the only copy of
+  // it. Seriatim's is a real checkout UUID -- Ekphrasis's deliberately is not,
+  // which products.test.ts asserts.
+  it('the seriatim variant id is a real checkout uuid, not a placeholder', () => {
+    expect(PRODUCTS.seriatim.variantId).toMatch(/^[0-9a-f-]{36}$/);
   });
 });

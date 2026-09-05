@@ -19,3 +19,25 @@ test('the legal pages are reachable and not placeholders', async ({ page }) => {
     expect(text).not.toMatch(/lorem|TODO|TBD|Vibrai/i);
   }
 });
+
+// The nav is the only route to Ekphrasis from most of the site, and the
+// homepage card is the only one from the landing page. Both are one deleted
+// line away from a site that builds, type-checks and tests clean while the
+// second product is unreachable by anything but a typed url.
+test('the nav offers both products on every page', async ({ page }) => {
+  for (const path of ['/', '/seriatim/download', '/ekphrasis/manual', '/eula']) {
+    await page.goto(path);
+    const nav = page.locator('nav');
+    await expect(nav.getByRole('link', { name: 'Seriatim', exact: true }), path)
+      .toHaveAttribute('href', '/seriatim');
+    await expect(nav.getByRole('link', { name: 'Ekphrasis', exact: true }), path)
+      .toHaveAttribute('href', '/ekphrasis');
+  }
+});
+
+test('the landing page cards link to both products', async ({ page }) => {
+  await page.goto('/');
+  const main = page.locator('main');
+  await expect(main.getByRole('link', { name: /^seriatim/i })).toHaveAttribute('href', '/seriatim');
+  await expect(main.getByRole('link', { name: /^ekphrasis/i })).toHaveAttribute('href', '/ekphrasis');
+});
