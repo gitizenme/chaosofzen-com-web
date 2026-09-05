@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from '../../lib/products';
+import { PRODUCTS, isPurchasable } from '../../lib/products';
 
 // This is where Lemon Squeezy sends someone after a purchase. Ekphrasis has no
 // Lemon Squeezy product (gitizenme/ekphrasis#28), so nobody can have arrived
@@ -16,7 +16,11 @@ import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from '../../lib/products';
 // come back with it. Note that a checkout existing is not the same as the dmg
 // existing (gitizenme/ekphrasis#39 and the /ekphrasis/* publish) -- check that
 // too before shipping the id.
-const purchasable = PRODUCTS.ekphrasis.variantId !== PLACEHOLDER_VARIANT_ID;
+//
+// The comparison was written out in full here. It is the shared predicate now,
+// because /ekphrasis/download needs the same answer and two spellings of one
+// rule are two rules waiting to disagree.
+const purchasable = isPurchasable(PRODUCTS.ekphrasis);
 ---
 <Base
   title="Thanks — Chaos of Zen"

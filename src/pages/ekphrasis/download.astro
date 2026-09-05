@@ -1,8 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
-import { PRODUCTS } from '../../lib/products';
+import { PRODUCTS, isPurchasable } from '../../lib/products';
 
+// The gate that used to live in scripts/check-products.mjs, which refused to
+// build the whole site -- every page of it, Seriatim's shipping checkout
+// included -- while this product's variantId was the placeholder. The thing
+// actually worth preventing is narrower than that: this page offering to sell
+// a product that does not exist. So the page declines to render the control,
+// and the build ships.
+//
+// /ekphrasis/thanks reads the same predicate. See src/lib/products.ts.
+const purchasable = isPurchasable(PRODUCTS.ekphrasis);
 const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
 ---
 <Base
@@ -13,30 +22,35 @@ const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
 
   <p>
     <strong>Ekphrasis is not released yet.</strong> There is no public build
-    behind this page and no checkout behind this button; this is where both
-    will be. Nothing here is available today.
+    behind this page and no checkout behind it; this is where both will be.
+    Nothing here is available today.
   </p>
 
-  <p>
-    Pay what you want. <strong>Zero is a real option</strong> — type 0, or leave
-    the box empty, and the download starts immediately. No email, no account.
-  </p>
+  {purchasable && (
+    <>
+      <p>
+        Pay what you want. <strong>Zero is a real option</strong> — type 0, or
+        leave the box empty, and the download starts immediately. No email, no
+        account.
+      </p>
 
-  <form data-testid="price-form" novalidate>
-    <label for="price">What's it worth to you?</label>
-    <div>
-      <span aria-hidden="true">$</span>
-      <input
-        id="price" name="price" data-testid="price-input"
-        type="text" inputmode="decimal" autocomplete="off"
-        value={suggested} aria-describedby="price-help price-error"
-      />
-    </div>
-    <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
-    <p id="price-error" data-testid="price-error" role="alert" hidden></p>
+      <form data-testid="price-form" novalidate>
+        <label for="price">What's it worth to you?</label>
+        <div>
+          <span aria-hidden="true">$</span>
+          <input
+            id="price" name="price" data-testid="price-input"
+            type="text" inputmode="decimal" autocomplete="off"
+            value={suggested} aria-describedby="price-help price-error"
+          />
+        </div>
+        <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
+        <p id="price-error" data-testid="price-error" role="alert" hidden></p>
 
-    <button type="submit" data-testid="download-button">Download for macOS</button>
-  </form>
+        <button type="submit" data-testid="download-button">Download for macOS</button>
+      </form>
+    </>
+  )}
 
   <VersionBadge manifestUrl={PRODUCTS.ekphrasis.manifestUrl} />
 
@@ -67,32 +81,45 @@ const suggested = (PRODUCTS.ekphrasis.suggestedPriceCents / 100).toFixed(0);
   // one product and ship another.
   const { downloadUrl, variantId } = PRODUCTS.ekphrasis;
 
-  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;
-  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]')!;
-  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]')!;
+  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]');
+  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]');
+  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]');
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const result = parsePrice(input.value);
+  // The form only renders while isPurchasable(PRODUCTS.ekphrasis) -- see the
+  // frontmatter. Astro bundles and ships this script either way, so it has to
+  // survive its own elements being absent. The non-null assertions that stood
+  // here threw a TypeError on every load of the gated page: a console error on
+  // a page that is otherwise correct is how the next real error gets ignored.
+  //
+  // This is the early return, spelled as the only form an ES module allows:
+  // Astro compiles this block into a module (it has imports), and a top-level
+  // `return` is a syntax error there. Deliberately no `else` branch -- there is
+  // nothing to degrade to. The whole point of the gate is that this page offers
+  // no way to pay for, or download, a product that does not exist.
+  if (form && input && error) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const result = parsePrice(input.value);
 
-    if (result.kind === 'invalid') {
-      error.textContent = result.reason;
-      error.hidden = false;
-      input.focus();
-      return;
-    }
-    error.hidden = true;
+      if (result.kind === 'invalid') {
+        error.textContent = result.reason;
+        error.hidden = false;
+        input.focus();
+        return;
+      }
+      error.hidden = true;
 
-    if (result.kind === 'free') {
-      // Straight to the file. No interstitial, no thank-you detour, no
-      // "consider donating" nag -- the person already answered that question.
-      window.location.href = downloadUrl;
-      return;
-    }
+      if (result.kind === 'free') {
+        // Straight to the file. No interstitial, no thank-you detour, no
+        // "consider donating" nag -- the person already answered that question.
+        window.location.href = downloadUrl;
+        return;
+      }
 
-    // The amount typed here doesn't travel to Lemon Squeezy -- their own
-    // checkout page has its own editable price field for this product
-    // (Pay What You Want). See the comment on checkoutUrl() for why.
-    window.location.href = checkoutUrl(variantId);
-  });
+      // The amount typed here doesn't travel to Lemon Squeezy -- their own
+      // checkout page has its own editable price field for this product
+      // (Pay What You Want). See the comment on checkoutUrl() for why.
+      window.location.href = checkoutUrl(variantId);
+    });
+  }
 </script>

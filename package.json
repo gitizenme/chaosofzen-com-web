@@ -4,12 +4,12 @@
   "version": "0.0.1",
   "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=22.12.0"
   },
-  "//engines.node": "scripts/check-products.mjs (run by npm run build) imports src/lib/products.ts directly and relies on node's built-in TypeScript type-stripping, unflagged only from 22.18.0 onward.",
+  "//engines.node": "Astro 7's own engines.node floor. It was >=22.18.0 while scripts/check-products.mjs imported src/lib/products.ts directly and needed node's unflagged TypeScript type-stripping; that script is gone (the checkout gate moved into the pages), so nothing here needs 22.18 any more and the floor is back to what the dependencies actually demand.",
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/check-products.mjs && astro build",
+    "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },

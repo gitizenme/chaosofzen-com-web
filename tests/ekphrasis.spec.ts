@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// The urls and the placeholder id are written out as literals on purpose.
+// The urls are written out as literals on purpose.
 // Importing them from src/lib/products would make this suite agree with the
 // pages BY CONSTRUCTION -- a mutation of the record would move both sides
 // together and nothing here would fail. An independent copy of the expected
@@ -8,7 +8,6 @@ import { test, expect } from '@playwright/test';
 const EKPHRASIS_DMG = 'https://dl.chaosofzen.dev/ekphrasis/Ekphrasis-latest.dmg';
 const EKPHRASIS_MANIFEST = 'https://dl.chaosofzen.dev/ekphrasis/latest.json';
 const SERIATIM_DMG = 'https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg';
-const PLACEHOLDER_VARIANT_ID = 'PLACEHOLDER-NO-LEMON-SQUEEZY-PRODUCT-YET';
 
 const EKPHRASIS_PAGES = [
   '/ekphrasis',
@@ -36,44 +35,29 @@ test('the download page badge points at the Ekphrasis manifest, not Seriatim’s
   );
 });
 
-test('zero goes to the Ekphrasis dmg, never Seriatim’s, and never to checkout', async ({ page }) => {
-  const downloads: string[] = [];
-  await page.route('**/*.dmg', route => {
-    downloads.push(route.request().url());
-    route.fulfill({ status: 200, body: 'dmg' });
-  });
-  let checkoutHit = false;
-  await page.route('**/store.chaosofzen.com/**', route => { checkoutHit = true; route.abort(); });
+// The two tests that stood here drove /ekphrasis/download's price form: one
+// asserted that 0 fetched the Ekphrasis dmg, the other that a positive amount
+// routed to a checkout wired to the PLACEHOLDER variant id. Both described a
+// page that offered to sell, and hand over, a product that does not exist --
+// they passed because the page did exactly that, guarded only by a build
+// script that refused to build the whole site.
+//
+// The gate is on the page now (src/lib/products.ts's isPurchasable), so there
+// is no form to drive. What those tests were really protecting -- that this
+// page never reaches Seriatim's dmg or Seriatim's checkout by copy-paste --
+// is asserted below and, from both directions, in tests/checkout-gate.spec.ts.
+test('the download page offers no route to any dmg or checkout, Seriatim’s least of all', async ({ page }) => {
+  const reached: string[] = [];
+  await page.route('**/*.dmg', route => { reached.push(route.request().url()); route.abort(); });
+  await page.route('**/store.chaosofzen.com/**', route => { reached.push(route.request().url()); route.abort(); });
 
   await page.goto('/ekphrasis/download');
-  await page.getByTestId('price-input').fill('0');
-  await page.getByTestId('download-button').click();
+  await expect(page.getByTestId('download-button')).toHaveCount(0);
+  await expect(page.locator(`a[href="${SERIATIM_DMG}"]`)).toHaveCount(0);
+  await expect(page.locator(`a[href="${EKPHRASIS_DMG}"]`)).toHaveCount(0);
 
-  await expect.poll(() => downloads.length).toBe(1);
-  expect(downloads[0]).toBe(EKPHRASIS_DMG);
-  expect(checkoutHit).toBe(false);
-});
-
-test('a positive amount routes to the checkout wired to the placeholder, and downloads nothing', async ({ page }) => {
-  // Asserting the PLACEHOLDER, not merely "some checkout": until
-  // gitizenme/ekphrasis#28 exists, a real-looking UUID here would be a
-  // checkout that takes money for a product with no file behind it. This
-  // failing is the correct outcome of filling that UUID in, and points
-  // whoever does it at this page's copy.
-  let checkout = '';
-  await page.route('**/store.chaosofzen.com/**', route => {
-    checkout = route.request().url();
-    route.fulfill({ status: 200, contentType: 'text/html', body: '<p>checkout</p>' });
-  });
-  let anyDownload = false;
-  await page.route('**/*.dmg', route => { anyDownload = true; route.abort(); });
-
-  await page.goto('/ekphrasis/download');
-  await page.getByTestId('price-input').fill('15');
-  await page.getByTestId('download-button').click();
-
-  await expect.poll(() => checkout).toContain(`/checkout/buy/${PLACEHOLDER_VARIANT_ID}`);
-  expect(anyDownload).toBe(false);
+  await page.waitForTimeout(500);
+  expect(reached).toEqual([]);
 });
 
 // Until there is a checkout, nobody can have arrived at the thank-you page from
