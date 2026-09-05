@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -665,12 +666,46 @@ def house_mark_svg() -> str:
     return _svg(house_body(), "Chaos of Zen")
 
 
+# seriatim_mark() and ekphrasis_mark() build an ink->voice feather (ramp()/
+# mix() interpolating from ink to a VOICE colour), so a currentColor rewrite
+# keyed on an EXACT match against the INK_ON_LIGHT sentinel misses most of
+# that feather: its early fills are near-ink but not bit-identical to the
+# sentinel, and left as baked hex literals they read as invisible near-black
+# residuals against a dark canvas -- sitting right at each mark's voice
+# handover (see design docs for finding C1). house_mark_inline_svg() has no
+# such residuals because the house mark's colour orbit is a full spectrum
+# that never blends toward ink, so its distance to INK_ON_LIGHT is always
+# large; that is also why favicon_svg()'s exact-match sentinel is safe -- its
+# icon construction has no feather at all (BUG-4).
+#
+# The real invariant is a DISTANCE threshold, not an equality: any literal
+# fill within INLINE_NEAR_INK_SQDIST of INK_ON_LIGHT (squared RGB distance,
+# via _rgb()) is close enough to read as "basically ink" and is rewritten to
+# currentColor. The threshold must sit well below every VOICE colour's own
+# distance from INK_ON_LIGHT so a genuine voice colour is never caught. The
+# closest of the four is TEAL, at a squared distance of 47589 -- the other
+# three (VERMILION 49261, SAGE 66564, AMBER 72890) sit further still.
+# INLINE_NEAR_INK_SQDIST = 10000 keeps better than 4x headroom (squared) /
+# 2x headroom (linear) below that closest voice colour.
+INLINE_NEAR_INK_SQDIST = 10000
+
+_HEX_FILL = re.compile(r'fill="(#[0-9a-fA-F]{6})"')
+
+
+def _near_ink(hexval: str, threshold: int = INLINE_NEAR_INK_SQDIST) -> bool:
+    a, b = _rgb(INK_ON_LIGHT), _rgb(hexval)
+    return sum((a[i] - b[i]) ** 2 for i in range(3)) < threshold
+
+
 def _inline(body: str, label: str) -> str:
-    """currentColor variant of a dark-baked mark body: the ink orbit's fills
-    are brushed with INK_ON_LIGHT as a sentinel and rewritten, exactly as
-    favicon_svg() already does for the icon. The colour orbit's own hues
-    never equal INK_ON_LIGHT, so the rewrite cannot touch them."""
-    body = body.replace(f'fill="{INK_ON_LIGHT}"', 'fill="currentColor"')
+    """currentColor variant of a dark-baked mark body: every literal fill
+    within INLINE_NEAR_INK_SQDIST of INK_ON_LIGHT (not just an exact match)
+    is rewritten to currentColor. See the module comment above this function
+    for why an exact match is not enough (finding C1) and how the threshold
+    was chosen."""
+    body = _HEX_FILL.sub(
+        lambda m: 'fill="currentColor"' if _near_ink(m.group(1)) else m.group(0),
+        body)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="{label}">
   {body}
   <style>

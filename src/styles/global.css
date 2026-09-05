@@ -147,7 +147,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  pre {
+  /* Card styling is for actual code blocks (a pre with a code child) only --
+     eula.astro renders the licence text as a plain <pre> with no <code>, and
+     a bare `pre` selector here would card the whole legal document. */
+  pre:has(code) {
     background: var(--color-canvas-raised);
     border: 1px solid var(--color-hairline);
     border-radius: var(--radius-brand);

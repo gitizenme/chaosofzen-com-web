@@ -316,6 +316,37 @@ class InlineMarks(unittest.TestCase):
         for v in mark.VOICE:
             self.assertIn(f'fill="{v}"', svg)
 
+    def test_inline_marks_have_no_near_ink_residuals(self):
+        # C1: an exact-match sentinel rewrite misses the ink->voice feather's
+        # near-ink fills (seriatim_mark()/ekphrasis_mark() interpolate through
+        # colours close to but not bit-identical to INK_ON_LIGHT). Any literal
+        # fill within mark.INLINE_NEAR_INK_SQDIST of INK_ON_LIGHT reads as
+        # "basically ink" and must become currentColor, or it bakes an
+        # invisible near-black residual into the dark theme.
+        ink_rgb = mark._rgb(mark.INK_ON_LIGHT)
+        svgs = {
+            "chaos-of-zen": mark.house_mark_inline_svg(),
+            "seriatim": mark.seriatim_mark_inline_svg(),
+            "ekphrasis": mark.ekphrasis_mark_inline_svg(),
+        }
+        for name, svg in svgs.items():
+            for hexval in re.findall(r'fill="(#[0-9a-fA-F]{6})"', svg):
+                rgb = mark._rgb(hexval)
+                sqdist = sum((a - b) ** 2 for a, b in zip(ink_rgb, rgb))
+                self.assertGreaterEqual(
+                    sqdist, mark.INLINE_NEAR_INK_SQDIST,
+                    f"{name}-inline.svg: {hexval} reads as ink "
+                    f"(sqdist={sqdist}) but was left as a baked literal")
+
+    def test_inline_marks_never_catch_a_voice_colour(self):
+        # the flip side of the same invariant: the threshold must never be
+        # so wide that it swallows a genuine VOICE hue.
+        ink_rgb = mark._rgb(mark.INK_ON_LIGHT)
+        for v in mark.VOICE:
+            rgb = mark._rgb(v)
+            sqdist = sum((a - b) ** 2 for a, b in zip(ink_rgb, rgb))
+            self.assertGreaterEqual(sqdist, mark.INLINE_NEAR_INK_SQDIST)
+
 
 class Field(unittest.TestCase):
     def test_string_positions_are_on_the_grid_and_unique(self):
