@@ -1,13 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Button from '../../components/Button.astro';
+import Mark from '../../components/Mark.astro';
 ---
 <Base
   title="Seriatim — a macOS generative instrument"
   description="Seriatim is a macOS VST3/AU generative instrument that composes four-voice music that never repeats, for roughly 931 million events per voice."
   ogImage="/media/seriatim-demo-poster.jpg"
 >
-  <h1>Seriatim</h1>
+  <div class="flex items-center gap-4">
+    <Mark name="seriatim" size={72} />
+    <h1>Seriatim</h1>
+  </div>
   <p>
     An instrument that composes four-voice music that never repeats — for
     roughly 931 million events per voice before it does.

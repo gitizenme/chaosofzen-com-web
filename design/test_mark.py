@@ -297,6 +297,26 @@ class ProductMarks(unittest.TestCase):
         self.assertEqual(fills, [mark.INK_ON_DARK, mark.INK_ON_DARK, mark.TEAL])
 
 
+class InlineMarks(unittest.TestCase):
+    def test_house_mark_inline_takes_current_color(self):
+        svg = mark.house_mark_inline_svg()
+        self.assertIn('fill="currentColor"', svg)
+        self.assertNotIn(f'fill="{mark.INK_ON_LIGHT}"', svg)
+        self.assertIn('prefers-color-scheme: dark', svg)
+
+    def test_seriatim_and_ekphrasis_inline_take_current_color(self):
+        for svg in (mark.seriatim_mark_inline_svg(), mark.ekphrasis_mark_inline_svg()):
+            self.assertIn('fill="currentColor"', svg)
+            self.assertNotIn(f'fill="{mark.INK_ON_LIGHT}"', svg)
+
+    def test_inline_marks_keep_their_colour_orbit(self):
+        # the ink orbit takes currentColor; the colour orbit's own hues
+        # (never INK_ON_LIGHT/DARK) must survive untouched
+        svg = mark.seriatim_mark_inline_svg()
+        for v in mark.VOICE:
+            self.assertIn(f'fill="{v}"', svg)
+
+
 class Field(unittest.TestCase):
     def test_string_positions_are_on_the_grid_and_unique(self):
         xs = mark.string_positions(400)

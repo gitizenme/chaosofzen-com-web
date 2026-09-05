@@ -665,6 +665,34 @@ def house_mark_svg() -> str:
     return _svg(house_body(), "Chaos of Zen")
 
 
+def _inline(body: str, label: str) -> str:
+    """currentColor variant of a dark-baked mark body: the ink orbit's fills
+    are brushed with INK_ON_LIGHT as a sentinel and rewritten, exactly as
+    favicon_svg() already does for the icon. The colour orbit's own hues
+    never equal INK_ON_LIGHT, so the rewrite cannot touch them."""
+    body = body.replace(f'fill="{INK_ON_LIGHT}"', 'fill="currentColor"')
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="{label}">
+  {body}
+  <style>
+    svg {{ color: {INK_ON_LIGHT}; }}
+    @media (prefers-color-scheme: dark) {{ svg {{ color: {INK_ON_DARK}; }} }}
+  </style>
+</svg>
+'''
+
+
+def house_mark_inline_svg() -> str:
+    return _inline(house_body(INK_ON_LIGHT), "Chaos of Zen")
+
+
+def seriatim_mark_inline_svg() -> str:
+    return _inline(seriatim_mark(INK_ON_LIGHT), "Seriatim")
+
+
+def ekphrasis_mark_inline_svg() -> str:
+    return _inline(ekphrasis_mark(INK_ON_LIGHT), "Ekphrasis")
+
+
 def ekphrasis_mark_svg() -> str:
     return _svg(ekphrasis_mark(), "Ekphrasis")
 
@@ -746,6 +774,9 @@ ASSETS = {
     "public/marks/ekphrasis-icon.svg": ekphrasis_icon_svg,
     "public/marks/seriatim.svg": seriatim_mark_svg,
     "public/marks/seriatim-icon.svg": seriatim_icon_svg,
+    "public/marks/chaos-of-zen-inline.svg": house_mark_inline_svg,
+    "public/marks/seriatim-inline.svg": seriatim_mark_inline_svg,
+    "public/marks/ekphrasis-inline.svg": ekphrasis_mark_inline_svg,
     "public/marks/field.svg": hero_field_svg,
     "design/store/logo.svg": store_logo_svg,
     "design/store/favicon.svg": store_favicon_svg,
