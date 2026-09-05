@@ -23,14 +23,17 @@ const segment = Astro.url.pathname.split('/')[1] ?? '';
 // guessing and offer both.
 const issuesUrl = ISSUE_TRACKERS[segment] ?? ISSUE_TRACKERS.seriatim;
 ---
-<footer class="mt-24 border-t border-ink/10 px-6 py-8 text-sm text-ink-muted">
-  <div class="flex flex-wrap gap-x-6 gap-y-2">
-    <a href="/eula" class="hover:text-ink">Licence</a>
-    <a href="/privacy" class="hover:text-ink">Privacy</a>
-    <a
-      href={issuesUrl}
-      rel="noopener"
-      class="hover:text-ink"
-    >Report an issue</a>
+<footer class="mt-24 w-full border-t border-hairline">
+  <div class="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 py-8 text-sm text-ink-muted">
+    <p class="!mb-0">© 2026 Chaos of Zen</p>
+    <div class="flex flex-wrap gap-x-6 gap-y-2">
+      <a href="/eula" class="hover:text-ink">Licence</a>
+      <a href="/privacy" class="hover:text-ink">Privacy</a>
+      <a
+        href={issuesUrl}
+        rel="noopener"
+        class="hover:text-ink"
+      >Report an issue</a>
+    </div>
   </div>
 </footer>
