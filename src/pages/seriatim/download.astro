@@ -1,8 +1,18 @@
 ---
 import Base from '../../layouts/Base.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
-import { PRODUCTS } from '../../lib/products';
+import { PRODUCTS, isPurchasable } from '../../lib/products';
 
+// Seriatim's product is real, so this is true today and the page renders
+// exactly what it always has -- the built output does not move by one byte.
+// The gate is here anyway because the invariant is a property of what a
+// product download page IS, not of one product's data: every Ekphrasis page in
+// this feature was written by mirroring its Seriatim counterpart, so an
+// ungated original is the version the next product would be copied from, and
+// the rule would survive only as long as nobody copied the wrong file.
+//
+// See src/lib/products.ts. /ekphrasis/download reads the same predicate.
+const purchasable = isPurchasable(PRODUCTS.seriatim);
 const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
 ---
 <Base
@@ -11,26 +21,31 @@ const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
 >
   <h1>Download Seriatim</h1>
 
-  <p>
-    Pay what you want. <strong>Zero is a real option</strong> — type 0, or leave
-    the box empty, and the download starts immediately. No email, no account.
-  </p>
+  {purchasable && (
+    <>
+      <p>
+        Pay what you want. <strong>Zero is a real option</strong> — type 0, or
+        leave the box empty, and the download starts immediately. No email, no
+        account.
+      </p>
 
-  <form data-testid="price-form" novalidate>
-    <label for="price">What's it worth to you?</label>
-    <div>
-      <span aria-hidden="true">$</span>
-      <input
-        id="price" name="price" data-testid="price-input"
-        type="text" inputmode="decimal" autocomplete="off"
-        value={suggested} aria-describedby="price-help price-error"
-      />
-    </div>
-    <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
-    <p id="price-error" data-testid="price-error" role="alert" hidden></p>
+      <form data-testid="price-form" novalidate>
+        <label for="price">What's it worth to you?</label>
+        <div>
+          <span aria-hidden="true">$</span>
+          <input
+            id="price" name="price" data-testid="price-input"
+            type="text" inputmode="decimal" autocomplete="off"
+            value={suggested} aria-describedby="price-help price-error"
+          />
+        </div>
+        <p id="price-help">Suggested ${suggested}. Enter 0 to download free — anything else takes you to checkout to confirm the amount.</p>
+        <p id="price-error" data-testid="price-error" role="alert" hidden></p>
 
-    <button type="submit" data-testid="download-button">Download for macOS</button>
-  </form>
+        <button type="submit" data-testid="download-button">Download for macOS</button>
+      </form>
+    </>
+  )}
 
   <VersionBadge manifestUrl={PRODUCTS.seriatim.manifestUrl} />
 
@@ -48,33 +63,43 @@ const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
   // job stopped looking alike.
   const { downloadUrl, variantId } = PRODUCTS.seriatim;
 
-  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]')!;
-  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]')!;
-  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]')!;
+  const form = document.querySelector<HTMLFormElement>('[data-testid="price-form"]');
+  const input = document.querySelector<HTMLInputElement>('[data-testid="price-input"]');
+  const error = document.querySelector<HTMLElement>('[data-testid="price-error"]');
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const result = parsePrice(input.value);
+  // The form renders only while isPurchasable(PRODUCTS.seriatim) -- see the
+  // frontmatter. Astro bundles and ships this script either way, so it has to
+  // survive its own elements not being there, exactly as the Ekphrasis page's
+  // script does. `querySelector(...)!` erased to a plain querySelector, so the
+  // very next line would throw an uncaught TypeError on every load of a gated
+  // page. Written as an `if` rather than an early return because Astro
+  // compiles this into an ES module, where a top-level `return` is a syntax
+  // error.
+  if (form && input && error) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const result = parsePrice(input.value);
 
-    if (result.kind === 'invalid') {
-      error.textContent = result.reason;
-      error.hidden = false;
-      input.focus();
-      return;
-    }
-    error.hidden = true;
+      if (result.kind === 'invalid') {
+        error.textContent = result.reason;
+        error.hidden = false;
+        input.focus();
+        return;
+      }
+      error.hidden = true;
 
-    if (result.kind === 'free') {
-      // Straight to the file. No interstitial, no thank-you detour, no
-      // "consider donating" nag -- the person already answered that question.
-      window.location.href = downloadUrl;
-      return;
-    }
+      if (result.kind === 'free') {
+        // Straight to the file. No interstitial, no thank-you detour, no
+        // "consider donating" nag -- the person already answered that question.
+        window.location.href = downloadUrl;
+        return;
+      }
 
-    // The amount typed here doesn't travel to Lemon Squeezy -- their own
-    // checkout page has its own editable price field for this product
-    // (Pay What You Want), defaulting to the product's suggestedPriceCents.
-    // See the comment on checkoutUrl() for why.
-    window.location.href = checkoutUrl(variantId);
-  });
+      // The amount typed here doesn't travel to Lemon Squeezy -- their own
+      // checkout page has its own editable price field for this product
+      // (Pay What You Want), defaulting to the product's suggestedPriceCents.
+      // See the comment on checkoutUrl() for why.
+      window.location.href = checkoutUrl(variantId);
+    });
+  }
 </script>
