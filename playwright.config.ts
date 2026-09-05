@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
@@ -8,4 +8,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
   use: { baseURL: 'http://localhost:4321' },
+  projects: [
+    { name: 'light', use: { ...devices['Desktop Chrome'] } },
+    { name: 'dark', use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
+  ],
 });
