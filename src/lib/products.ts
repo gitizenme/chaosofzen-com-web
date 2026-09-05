@@ -21,10 +21,22 @@ export interface Product {
   suggestedPriceCents: number;
 }
 
-// Ekphrasis has no Lemon Squeezy product yet (gitizenme/ekphrasis#28). This
-// literal is what scripts/check-products.mjs refuses to build with: a checkout
-// wired to a product that does not exist would take payment and deliver
-// nothing.
+// Ekphrasis has no Lemon Squeezy product yet. A checkout wired to a product
+// that does not exist would take payment and deliver nothing, so this literal
+// stands in until one exists.
+//
+// TO REPLACE THIS: create the Lemon Squeezy product -- gitizenme/ekphrasis#28
+// -- and put its checkout UUID (from the variant's "Share / Buy" link, not the
+// numeric variant id) in PRODUCTS.ekphrasis.variantId below. A checkout
+// existing is not the same as the dmg existing (gitizenme/ekphrasis#39 and the
+// /ekphrasis/* publish); check that too before shipping the id.
+//
+// This pointer used to live in scripts/check-products.mjs, a pre-build guard
+// that refused to build at all while any variantId was this value. That guard
+// blocked EVERY deploy of the whole site, Seriatim's included, over a page
+// that could simply decline to render a checkout -- so the refusal moved from
+// the build to the page. isPurchasable() below is what enforces it now, and
+// tests/checkout-gate.spec.ts asserts the built output obeys it.
 export const PLACEHOLDER_VARIANT_ID = 'PLACEHOLDER-NO-LEMON-SQUEEZY-PRODUCT-YET';
 
 // The products this site ships. ONE definition, used two ways: as the type of
@@ -52,3 +64,16 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     suggestedPriceCents: 1200,
   },
 };
+
+// The single answer to "may a page offer to sell this?". ONE definition,
+// because the interesting failure is two of them: /ekphrasis/thanks carried
+// its own copy of `variantId !== PLACEHOLDER_VARIANT_ID` while
+// /ekphrasis/download had no check at all, and nothing could notice that the
+// two pages disagreed about the same product.
+//
+// A page that renders a purchase control or a checkout url for a product this
+// returns false for is a bug -- tests/checkout-gate.spec.ts asserts against
+// the built output that none does.
+export function isPurchasable(product: Product): boolean {
+  return product.variantId !== PLACEHOLDER_VARIANT_ID;
+}
