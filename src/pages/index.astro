@@ -1,10 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
+import Mark from '../components/Mark.astro';
 ---
 <Base
   title="Chaos of Zen"
-  description="Chaos of Zen is a small studio making generative music software, starting with Seriatim."
+  description="Chaos of Zen is a small studio making generative music software for macOS: Seriatim, a four-voice generative instrument, and Ekphrasis, an image-to-sound instrument in development."
 >
+  <div class="mb-2">
+    <Mark name="chaos-of-zen" size={96} />
+  </div>
   <h1>Chaos of Zen</h1>
   <p>A small studio making software that makes music on its own terms.</p>
 
@@ -15,6 +19,14 @@ import Base from '../layouts/Base.astro';
     >
       <h2>Seriatim</h2>
       <p>A macOS generative instrument. Four voices, never repeating for roughly 931 million events.</p>
+    </a>
+
+    <a
+      href="/ekphrasis"
+      class="block rounded-brand border border-ink/10 bg-canvas-raised p-6 hover:border-accent"
+    >
+      <h2>Ekphrasis</h2>
+      <p>A macOS instrument that reads an image as a spectrogram and plays it. In development — not released yet.</p>
     </a>
 
     <a

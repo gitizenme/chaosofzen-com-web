@@ -44,6 +44,15 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm astro check
       - run: pnpm vitest run
+      # The same command the deploy runs: wrangler.jsonc's build.command is
+      # `pnpm build`. This step was `pnpm astro build` for a while because
+      # `pnpm build` was `check-products.mjs && astro build`, and that guard
+      # refused outright while Ekphrasis's variantId was the placeholder --
+      # every PR red for a reason unrelated to the change under review, which
+      # is how a suite gets ignored. The guard has since moved into the pages
+      # (src/lib/products.ts's isPurchasable), so `pnpm build` succeeds and CI
+      # can exercise the real thing again. Building something other than what
+      # deploys is how a deploy-only failure gets discovered in production.
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test

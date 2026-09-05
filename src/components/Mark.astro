@@ -1,0 +1,5 @@
+---
+interface Props { name: 'chaos-of-zen' | 'seriatim' | 'ekphrasis'; size: number }
+const { name, size } = Astro.props;
+---
+<img src={`/marks/${name}-inline.svg`} alt="" width={size} height={size} style={`display:block; width:${size}px; height:${size}px;`} />

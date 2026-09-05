@@ -1,29 +1,37 @@
 ---
-import { MANIFEST_URL } from '../lib/download';
+interface Props { manifestUrl: string }
+const { manifestUrl } = Astro.props;
 ---
-<p data-testid="version-badge" hidden class="text-sm text-ink-muted">
+<p data-testid="version-badge" hidden data-manifest-url={manifestUrl}
+   class="text-sm text-ink-muted">
   <span data-slot="summary"></span>
   <code data-slot="sha" class="block break-all text-xs opacity-70"></code>
 </p>
 
 <script>
-  import { MANIFEST_URL, parseManifest, formatBytes } from '../lib/download';
+  import { parseManifest, formatBytes } from '../lib/download';
 
   const el = document.querySelector<HTMLElement>('[data-testid="version-badge"]');
   if (el) {
+    // The url comes from the element, not an import: this component serves
+    // more than one product, and an imported constant would silently make
+    // every badge show the same one.
+    const url = el.dataset.manifestUrl;
     // Deliberately fire-and-forget with no retry and no spinner: this is
     // decoration next to a button that already works. A failure is a
     // non-event, so it must look like one.
-    fetch(MANIFEST_URL, { cache: 'no-cache' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(raw => {
-        const m = parseManifest(raw);
-        if (!m) return;
-        el.querySelector('[data-slot="summary"]')!.textContent =
-          `Version ${m.version} · ${formatBytes(m.size_bytes)} · macOS ${m.min_macos}+`;
-        el.querySelector('[data-slot="sha"]')!.textContent = `SHA-256 ${m.sha256}`;
-        el.hidden = false;
-      })
-      .catch(() => { /* stays hidden */ });
+    if (url) {
+      fetch(url, { cache: 'no-cache' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(raw => {
+          const m = parseManifest(raw);
+          if (!m) return;
+          el.querySelector('[data-slot="summary"]')!.textContent =
+            `Version ${m.version} · ${formatBytes(m.size_bytes)} · macOS ${m.min_macos}+`;
+          el.querySelector('[data-slot="sha"]')!.textContent = `SHA-256 ${m.sha256}`;
+          el.hidden = false;
+        })
+        .catch(() => { /* stays hidden */ });
+    }
   }
 </script>
