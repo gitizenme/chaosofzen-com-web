@@ -24,10 +24,8 @@ const rendered = await Promise.all(entries.map(e => render(e)));
     const anchor = changelogAnchor(entry.data.version);
     return (
       <section>
-        <h2 id={anchor}>
-          {entry.data.version} — {entry.data.title}
-          <span> · {entry.data.date}</span>
-        </h2>
+        <h2 id={anchor}>{entry.data.version} — {entry.data.title}</h2>
+        <p class="text-sm text-ink-muted font-mono !mt-0 !mb-4"><time datetime={entry.data.date}>{entry.data.date}</time></p>
         <Content />
       </section>
     );
