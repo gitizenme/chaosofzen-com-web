@@ -20,6 +20,7 @@ import { test, expect, type Page, type Request } from '@playwright/test';
 // and nothing here would fail.
 const LS_HOST = 'store.chaosofzen.com';
 const SERIATIM_VARIANT_ID = 'b6654c01-a0a8-473b-a260-bbb84d08b9ba';
+const EKPHRASIS_VARIANT_ID = '0c46d9d5-ff9f-4621-a346-094d699cb6d7';
 const EKPHRASIS_DMG = 'https://dl.chaosofzen.dev/ekphrasis/Ekphrasis-latest.dmg';
 const SERIATIM_DMG = 'https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg';
 
@@ -58,32 +59,29 @@ function recordTraffic(page: Page) {
   return { requests, errors };
 }
 
-test('no Ekphrasis page renders a purchase control while its product does not exist', async ({ page }) => {
+// 0.1.0 shipped, so the gate is open and these assertions inverted. What they
+// were really protecting survives unchanged: the control appears on the
+// download page and NOWHERE ELSE, and no Ekphrasis page ever reaches
+// Seriatim's dmg. A copy-paste of Seriatim's page into Ekphrasis still fails
+// here -- now on the variant id rather than on the control's absence.
+test('the purchase control appears on the Ekphrasis download page and no other', async ({ page }) => {
   for (const path of EKPHRASIS_PAGES) {
     await page.goto(path);
     const main = page.locator('main');
+    const isDownload = path === '/ekphrasis/download';
+    const expected = isDownload ? 1 : 0;
 
-    // The control itself, by the testids the shipping Seriatim page uses --
-    // so a copy-paste of that page into Ekphrasis fails here.
-    await expect(main.getByTestId('price-form'), path).toHaveCount(0);
-    await expect(main.getByTestId('price-input'), path).toHaveCount(0);
-    await expect(main.getByTestId('download-button'), path).toHaveCount(0);
+    await expect(main.getByTestId('price-form'), path).toHaveCount(expected);
+    await expect(main.getByTestId('price-input'), path).toHaveCount(expected);
+    await expect(main.getByTestId('download-button'), path).toHaveCount(expected);
 
-    // And the control by SHAPE, so renaming the testids does not slip past.
-    // Nothing in the layout puts a form or a button in <main>; both product
-    // download pages are the only source of either.
-    await expect(main.locator('form'), path).toHaveCount(0);
-    await expect(main.locator('button'), path).toHaveCount(0);
-
-    // No link anywhere on the page -- layout included -- offers the checkout
-    // or the dmg.
-    await expect(page.locator(`a[href*="${LS_HOST}"]`), path).toHaveCount(0);
-    await expect(page.locator(`a[href="${EKPHRASIS_DMG}"]`), path).toHaveCount(0);
+    // Seriatim's dmg must never appear on an Ekphrasis page, released or not.
+    // This is the copy-paste this suite exists to catch and it does not relax.
     await expect(page.locator(`a[href="${SERIATIM_DMG}"]`), path).toHaveCount(0);
   }
 });
 
-test('the gated pages reach neither Lemon Squeezy nor a dmg, and raise no error doing it', async ({ page }) => {
+test('the Ekphrasis download page reaches its OWN checkout, and raises no error doing it', async ({ page }) => {
   // The download page's client script still ships -- Astro bundles a hoisted
   // <script> whether or not its elements rendered -- so this also covers the
   // guard that replaced its non-null assertions. `querySelector(...)!` erases
@@ -101,17 +99,32 @@ test('the gated pages reach neither Lemon Squeezy nor a dmg, and raise no error 
     route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
   );
 
+  let checkout = '';
+  await page.route(`**/${LS_HOST}/**`, route => {
+    checkout = route.request().url();
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<p>checkout</p>' });
+  });
+
   const { requests, errors } = recordTraffic(page);
 
-  for (const path of ['/ekphrasis/download', '/ekphrasis/thanks']) {
-    await page.goto(path);
-    // Past /ekphrasis/thanks's 1200ms auto-start timer, which must not fire.
-    await page.waitForTimeout(2000);
-    expect(new URL(page.url()).pathname.replace(/\/$/, ''), `${path} navigated away`).toBe(path);
-  }
+  await page.goto('/ekphrasis/download');
+  await page.getByTestId('price-input').fill('15');
+  await page.getByTestId('download-button').click();
 
-  expect(requests.filter(u => u.includes(LS_HOST)), 'checkout requests').toEqual([]);
-  expect(requests.filter(u => u.endsWith('.dmg')), 'dmg requests').toEqual([]);
+  // Its own variant, never Seriatim's. Asserted on the full url rather than
+  // "contains the uuid", so a prefixed value -- /checkout/buy/buy/<uuid>, what
+  // the store hands you when you copy the link -- fails here too.
+  await expect.poll(() => checkout).toBe(
+    `https://${LS_HOST}/checkout/buy/${EKPHRASIS_VARIANT_ID}`
+  );
+  expect(
+    requests.filter(u => u.includes(SERIATIM_VARIANT_ID)),
+    'reached Seriatim’s checkout',
+  ).toEqual([]);
+
+  // The error channels stay watched. The download page's client script guards
+  // its querySelector calls, and a page that throws while otherwise looking
+  // correct is how the next real error gets ignored.
   expect(errors, 'page errors').toEqual([]);
 });
 

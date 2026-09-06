@@ -29,8 +29,19 @@ describe('PRODUCTS', () => {
     expect(PRODUCTS[slug].downloadUrl).toMatch(/-latest\.dmg$/);
   });
 
-  it('gives ekphrasis the placeholder variant id, because its product does not exist yet', () => {
-    expect(PRODUCTS.ekphrasis.variantId).toBe(PLACEHOLDER_VARIANT_ID);
+  // Both products now have real Lemon Squeezy variants, so the placeholder
+  // should appear nowhere. Asserted per-product rather than only on ekphrasis:
+  // the interesting failure is a THIRD product being added and shipped with the
+  // placeholder still in it, which an ekphrasis-only assertion cannot see.
+  it.each(['seriatim', 'ekphrasis'] as const)('%s has a real variant id', slug => {
+    expect(PRODUCTS[slug].variantId).not.toBe(PLACEHOLDER_VARIANT_ID);
+    // The bare uuid Lemon Squeezy issues, with no "buy/" prefix: checkoutUrl()
+    // builds /checkout/buy/<variantId>, so a prefixed value here yields
+    // /checkout/buy/buy/<uuid> and a checkout that 404s. That is exactly what
+    // the store hands you when you copy the link, so it is worth pinning.
+    expect(PRODUCTS[slug].variantId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
   });
 });
 
