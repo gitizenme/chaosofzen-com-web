@@ -2,20 +2,35 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection, render } from 'astro:content';
 import { entriesFor, changelogAnchor } from '../../lib/changelog';
+import { PRODUCTS, isPurchasable } from '../../lib/products';
 
 const allEntries = await getCollection('changelog');
 const entries = entriesFor(allEntries, 'ekphrasis');
 const rendered = await Promise.all(entries.map(e => render(e)));
+
+// Whether the product has shipped is a different question from whether this
+// page has entries to show, and the two necessarily disagree for a while: the
+// release pipeline REFUSES to publish a version whose changelog anchor does
+// not already resolve here, so an entry must exist and be deployed BEFORE the
+// release it describes goes out.
+//
+// Keying the release-status line off entries.length therefore silently drops
+// it at exactly the wrong moment -- the window where the changelog lists a
+// version nobody can download yet. It reads off the same signal the other four
+// Ekphrasis pages use instead.
+const released = isPurchasable(PRODUCTS.ekphrasis);
 ---
 <Base
   title="Changelog — Ekphrasis"
   description="Release history for Ekphrasis, which has not published a release yet."
 >
   <h1>Changelog</h1>
-  {entries.length === 0 && (
+  {!released && (
     <p>
-      <strong>Ekphrasis is not released yet.</strong> There are no releases to
-      write about; this page is where they will appear.
+      <strong>Ekphrasis is not released yet.</strong>{' '}
+      {entries.length === 0
+        ? 'There are no releases to write about; this page is where they will appear.'
+        : 'What follows describes a version that has been prepared but not yet published, so there is nothing to download for it.'}
     </p>
   )}
   {entries.map((entry, i) => {
