@@ -15,13 +15,14 @@ const ISSUE_TRACKERS: Record<string, string> = {
 // what the fallback is for.
 const segment = Astro.url.pathname.split('/')[1] ?? '';
 
-// Non-product pages (/, /eula, /privacy) keep Seriatim's tracker -- the value
-// they already linked to, so this change alters no existing page. It is also
-// the better guess while Seriatim is the only released product: someone
-// reporting a problem from the licence page has the software that exists.
-// Revisit when Ekphrasis ships; the honest answer then is probably to stop
-// guessing and offer both.
-const issuesUrl = ISSUE_TRACKERS[segment] ?? ISSUE_TRACKERS.seriatim;
+// On a product page there is no ambiguity: report against that product.
+//
+// On a non-product page (/, /eula, /privacy) there is, and it is now a real
+// one -- both products ship, so a single link sends half the reports to the
+// wrong repository. The earlier note here said to revisit this when Ekphrasis
+// shipped and that the honest answer was probably to stop guessing. It has,
+// and it is: offer both rather than pick.
+const product = ISSUE_TRACKERS[segment];
 ---
 <footer class="mt-24 w-full border-t border-hairline">
   <div class="mx-auto flex w-full max-w-3xl flex-col gap-2 px-6 py-8 text-sm text-ink-muted">
@@ -29,11 +30,15 @@ const issuesUrl = ISSUE_TRACKERS[segment] ?? ISSUE_TRACKERS.seriatim;
     <div class="flex flex-wrap gap-x-6 gap-y-2">
       <a href="/eula" class="hover:text-ink">Licence</a>
       <a href="/privacy" class="hover:text-ink">Privacy</a>
-      <a
-        href={issuesUrl}
-        rel="noopener"
-        class="hover:text-ink"
-      >Report an issue</a>
+      {product ? (
+        <a href={product} rel="noopener" class="hover:text-ink">Report an issue</a>
+      ) : (
+        <span class="flex flex-wrap gap-x-2">
+          <span>Report an issue:</span>
+          <a href={ISSUE_TRACKERS.seriatim} rel="noopener" class="hover:text-ink">Seriatim</a>
+          <a href={ISSUE_TRACKERS.ekphrasis} rel="noopener" class="hover:text-ink">Ekphrasis</a>
+        </span>
+      )}
     </div>
   </div>
 </footer>
