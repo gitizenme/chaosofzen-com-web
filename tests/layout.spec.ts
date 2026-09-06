@@ -26,17 +26,35 @@ test('the footer issue tracker follows the product path', async ({ page }) => {
     ['/ekphrasis', TRACKER.ekphrasis],
     ['/ekphrasis/download', TRACKER.ekphrasis],
     ['/ekphrasis/manual', TRACKER.ekphrasis],
-    // Non-product pages keep Seriatim's tracker, which is the value they
-    // already linked to. Recorded so that a later change to that fallback is
-    // a deliberate edit rather than a side effect.
-    ['/', TRACKER.seriatim],
-    ['/eula', TRACKER.seriatim],
-    ['/privacy', TRACKER.seriatim],
   ];
 
   for (const [path, expected] of CASES) {
     await page.goto(path);
     const link = page.locator('footer').getByRole('link', { name: /report an issue/i });
     await expect(link, `footer tracker on ${path}`).toHaveAttribute('href', expected);
+  }
+});
+
+// Both products ship, so a non-product page cannot pick one without sending
+// half the reports to the wrong repository. It offers both instead.
+//
+// This replaces an earlier case asserting these pages kept Seriatim's tracker
+// -- correct while Seriatim was the only released product, and recorded there
+// precisely so that changing it would be a deliberate edit rather than a side
+// effect. This is that edit.
+test('a non-product page offers both trackers rather than guessing', async ({ page }) => {
+  for (const path of ['/', '/eula', '/privacy']) {
+    await page.goto(path);
+    const footer = page.locator('footer');
+
+    await expect(footer.getByRole('link', { name: 'Seriatim' }), path)
+      .toHaveAttribute('href', TRACKER.seriatim);
+    await expect(footer.getByRole('link', { name: 'Ekphrasis' }), path)
+      .toHaveAttribute('href', TRACKER.ekphrasis);
+
+    // And no single "Report an issue" link, which is what picking one looks
+    // like -- so a revert to either hardcoded url fails here.
+    await expect(footer.getByRole('link', { name: /report an issue/i }), path)
+      .toHaveCount(0);
   }
 });
