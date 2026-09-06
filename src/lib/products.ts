@@ -60,7 +60,10 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
   ekphrasis: {
     downloadUrl: 'https://dl.chaosofzen.dev/ekphrasis/Ekphrasis-latest.dmg',
     manifestUrl: 'https://dl.chaosofzen.dev/ekphrasis/latest.json',
-    variantId: PLACEHOLDER_VARIANT_ID,
+    // Bare uuid, no "buy/" prefix: checkoutUrl() builds
+    // https://<store>/checkout/buy/<variantId>, so a prefixed value here
+    // yields /checkout/buy/buy/<uuid> and a checkout that 404s.
+    variantId: '0c46d9d5-ff9f-4621-a346-094d699cb6d7',
     suggestedPriceCents: 1200,
   },
 };

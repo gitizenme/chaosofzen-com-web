@@ -46,18 +46,24 @@ test('the download page badge points at the Ekphrasis manifest, not Seriatim’s
 // is no form to drive. What those tests were really protecting -- that this
 // page never reaches Seriatim's dmg or Seriatim's checkout by copy-paste --
 // is asserted below and, from both directions, in tests/checkout-gate.spec.ts.
-test('the download page offers no route to any dmg or checkout, Seriatim’s least of all', async ({ page }) => {
+test('the download page’s free path reaches the Ekphrasis dmg, never Seriatim’s', async ({ page }) => {
   const reached: string[] = [];
-  await page.route('**/*.dmg', route => { reached.push(route.request().url()); route.abort(); });
-  await page.route('**/store.chaosofzen.com/**', route => { reached.push(route.request().url()); route.abort(); });
+  await page.route('**/*.dmg', route => {
+    reached.push(route.request().url());
+    route.fulfill({ status: 200, body: 'dmg' });
+  });
 
   await page.goto('/ekphrasis/download');
-  await expect(page.getByTestId('download-button')).toHaveCount(0);
+  await expect(page.getByTestId('download-button')).toBeVisible();
   await expect(page.locator(`a[href="${SERIATIM_DMG}"]`)).toHaveCount(0);
-  await expect(page.locator(`a[href="${EKPHRASIS_DMG}"]`)).toHaveCount(0);
 
-  await page.waitForTimeout(500);
-  expect(reached).toEqual([]);
+  // Zero is the free path: it hands over the dmg directly rather than routing
+  // to a checkout. Which dmg is the whole question -- the copy-paste this
+  // suite exists to catch would serve Seriatim's.
+  await page.getByTestId('price-input').fill('0');
+  await page.getByTestId('download-button').click();
+
+  await expect.poll(() => reached).toEqual([EKPHRASIS_DMG]);
 });
 
 // Until there is a checkout, nobody can have arrived at the thank-you page from
@@ -65,7 +71,7 @@ test('the download page offers no route to any dmg or checkout, Seriatim’s lea
 // page must not navigate anywhere. This is the assertion that has to change the
 // day gitizenme/ekphrasis#28 lands, and its replacement is the one above it in
 // git history: auto-starts, and to the Ekphrasis dmg rather than Seriatim's.
-test('the thank-you page starts no download while there is nothing to have bought', async ({ page }) => {
+test('the thank-you page auto-starts the Ekphrasis dmg, not Seriatim’s', async ({ page }) => {
   const downloads: string[] = [];
   await page.route('**/*.dmg', route => {
     downloads.push(route.request().url());
@@ -73,16 +79,13 @@ test('the thank-you page starts no download while there is nothing to have bough
   });
 
   await page.goto('/ekphrasis/thanks');
-  await expect(page.getByTestId('thanks-unreleased')).toBeVisible();
-  await expect(page.getByTestId('thanks-download')).toHaveCount(0);
+  await expect(page.getByTestId('thanks-download')).toBeVisible();
   await expect(page.locator(`a[href="${SERIATIM_DMG}"]`)).toHaveCount(0);
-  await expect(page.locator(`a[href="${EKPHRASIS_DMG}"]`)).toHaveCount(0);
 
-  // The auto-start it used to do fired at 1200ms. Wait past that, then assert
-  // the page is still the page.
-  await page.waitForTimeout(2500);
-  expect(downloads).toEqual([]);
-  expect(new URL(page.url()).pathname.replace(/\/$/, '')).toBe('/ekphrasis/thanks');
+  // The auto-start fires at 1200ms. Wait past it, then assert what it fetched:
+  // an assertion made before the timer would pass on a page that never starts
+  // one at all.
+  await expect.poll(() => downloads, { timeout: 5000 }).toEqual([EKPHRASIS_DMG]);
 });
 
 // Every one of the five pages is in the sitemap, so search lands people
@@ -91,18 +94,30 @@ test('the thank-you page starts no download while there is nothing to have bough
 // page said "your download should start in a moment", and the changelog said
 // nothing either way. One sentence, checked verbatim on all five, so deleting
 // it from any one of them fails here.
-test('every Ekphrasis page states the release status', async ({ page }) => {
+// 0.1.0 shipped, so the sentence this used to require on all five pages is now
+// FALSE and must appear on none of them. The hazard reverses with the release
+// rather than disappearing: before, a page that failed to say "not released"
+// oversold; now, a page that still says it undersells a product people can
+// buy, and stale copy on a page nobody re-reads is exactly what survives a
+// launch.
+test('no Ekphrasis page still claims the product is unreleased', async ({ page }) => {
   for (const path of EKPHRASIS_PAGES) {
     await page.goto(path);
     const body = await page.locator('main').innerText();
-    expect(body, path).toContain('Ekphrasis is not released yet.');
+    expect(body, path).not.toContain('not released yet');
+    expect(body, path).not.toContain('nothing to buy');
   }
 });
 
-test('the download page metadata does not promise a product that does not exist', async ({ page }) => {
-  // What a search result and a social card render. The page body was already
-  // scrupulous; these two strings were not.
-  await page.goto('/ekphrasis/download');
-  await expect(page.locator('meta[name="description"]'))
-    .toHaveAttribute('content', /not released yet/i);
+// The metadata is what a search result and a social card render, and it is the
+// copy least likely to be re-read after a launch -- it is not visible on the
+// page. It used to be required to say "not released yet"; now it must not, on
+// any of the five, and must still describe the product rather than going blank.
+test('no Ekphrasis page’s metadata still says the product is unreleased', async ({ page }) => {
+  for (const path of EKPHRASIS_PAGES) {
+    await page.goto(path);
+    const description = page.locator('meta[name="description"]');
+    await expect(description, path).toHaveAttribute('content', /\S/);
+    await expect(description, path).not.toHaveAttribute('content', /not released yet/i);
+  }
 });
