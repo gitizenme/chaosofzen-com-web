@@ -19,8 +19,8 @@ import { test, expect, type Page, type Request } from '@playwright/test';
 // BY CONSTRUCTION -- a mutation of the record would move both sides together
 // and nothing here would fail.
 const LS_HOST = 'store.chaosofzen.com';
-const SERIATIM_VARIANT_ID = 'b6654c01-a0a8-473b-a260-bbb84d08b9ba';
-const EKPHRASIS_VARIANT_ID = '0c46d9d5-ff9f-4621-a346-094d699cb6d7';
+const SERIATIM_VARIANT_ID = 'f623b2eb-4777-407c-aee4-a5f118e609b1';
+const EKPHRASIS_VARIANT_ID = '70d8c1fb-f893-4379-abe9-b23eb7680801';
 const EKPHRASIS_DMG = 'https://dl.chaosofzen.dev/ekphrasis/Ekphrasis-latest.dmg';
 const SERIATIM_DMG = 'https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg';
 

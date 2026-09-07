@@ -54,7 +54,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
   seriatim: {
     downloadUrl: 'https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg',
     manifestUrl: 'https://dl.chaosofzen.dev/seriatim/latest.json',
-    variantId: 'b6654c01-a0a8-473b-a260-bbb84d08b9ba',
+    variantId: 'f623b2eb-4777-407c-aee4-a5f118e609b1',
     suggestedPriceCents: 1200,
   },
   ekphrasis: {
@@ -63,7 +63,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     // Bare uuid, no "buy/" prefix: checkoutUrl() builds
     // https://<store>/checkout/buy/<variantId>, so a prefixed value here
     // yields /checkout/buy/buy/<uuid> and a checkout that 404s.
-    variantId: '0c46d9d5-ff9f-4621-a346-094d699cb6d7',
+    variantId: '70d8c1fb-f893-4379-abe9-b23eb7680801',
     suggestedPriceCents: 1200,
   },
 };
