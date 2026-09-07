@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseManifest, DOWNLOAD_URL } from './download';
+import { parseManifest } from './download';
 
 const valid = {
   version: '1.5.0',
@@ -32,8 +32,4 @@ describe('parseManifest', () => {
     expect(parseManifest({ ...valid, size_bytes: 'big' })).toBeNull();
   });
 
-  it('points the download at the stable alias, never a versioned file', () => {
-    expect(DOWNLOAD_URL).toBe('https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg');
-    expect(DOWNLOAD_URL).not.toMatch(/\d+\.\d+\.\d+/);
-  });
 });

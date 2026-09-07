@@ -3,13 +3,20 @@
 // that a slug cannot exist here without a product behind it.
 import type { ProductSlug } from './products';
 
-// Splits a version like "1.4.0-rc1" into its numeric components ([1, 4, 0])
-// and whether it carries a pre-release suffix. A component that still isn't
+// Splits a version like "1.4.0-rc2" into its numeric components ([1, 4, 0])
+// and its pre-release identifiers (["rc2"]), which semver defines as the
+// dot-separated fields after the first "-". A component that still isn't
 // numeric once the suffix is stripped is treated as 0, not NaN: a comparator
 // must never return NaN -- V8 treats that as "equal" and silently corrupts
 // the sort, which is exactly what plain `.split('.').map(Number)` did here
 // on a version like "1.4.0-rc1" (its last component, "0-rc1", is NaN).
-function parseVersion(version: string): { parts: number[]; hasSuffix: boolean } {
+//
+// Build metadata ("+sha") is NOT split out, so it would fold into the
+// pre-release identifiers and rank the version below its plain form. Nothing
+// in either repository emits it -- release.sh's parse_version accepts
+// X.Y.Z[-rcN] and nothing more -- so this is a known limit, not a claim of
+// full semver parsing.
+function parseVersion(version: string): { parts: number[]; prerelease: string[] } {
   const dashIndex = version.indexOf('-');
   const hasSuffix = dashIndex !== -1;
   const numeric = hasSuffix ? version.slice(0, dashIndex) : version;
@@ -17,7 +24,62 @@ function parseVersion(version: string): { parts: number[]; hasSuffix: boolean } 
     const n = Number(part);
     return Number.isFinite(n) ? n : 0;
   });
-  return { parts, hasSuffix };
+  const prerelease = hasSuffix ? version.slice(dashIndex + 1).split('.') : [];
+  return { parts, prerelease };
+}
+
+// Compares two pre-release identifiers ascending, splitting each into runs of
+// digits and non-digits so the digits compare as numbers: rc2 < rc10.
+//
+// This is a DELIBERATE departure from semver, which classes "rc10" as an
+// alphanumeric identifier and compares it ASCII-lexically -- putting rc10
+// BELOW rc2. Semver's own escape hatch is to write the number as its own
+// dot-separated field ("rc.10"), which this project does not do: release.sh
+// emits X.Y.Z-rcN, unseparated. Following semver to the letter here would
+// therefore mis-order the only pre-release format we actually ship, which is
+// the trap issue #17 named. Dot-separated numeric fields still compare
+// numerically, so "rc.2" < "rc.10" too; the departure only adds a case
+// semver leaves lexical.
+//
+// The semver rule that a numeric identifier ranks below an alphanumeric one
+// is kept, applied per run.
+function compareIdentifierAscending(a: string, b: string): number {
+  const runsA = a.match(/\d+|\D+/g) ?? [];
+  const runsB = b.match(/\d+|\D+/g) ?? [];
+  const shared = Math.min(runsA.length, runsB.length);
+  for (let i = 0; i < shared; i++) {
+    const numericA = /^\d/.test(runsA[i]);
+    const numericB = /^\d/.test(runsB[i]);
+    if (numericA !== numericB) return numericA ? -1 : 1;
+    if (numericA) {
+      const diff = Number(runsA[i]) - Number(runsB[i]);
+      if (diff !== 0) return diff;
+    } else if (runsA[i] !== runsB[i]) {
+      return runsA[i] < runsB[i] ? -1 : 1;
+    }
+  }
+  if (runsA.length !== runsB.length) return runsA.length - runsB.length;
+  // Everything above compared equal but the strings differ -- "rc01" against
+  // "rc1", say. Fall back to the raw string so distinct identifiers never tie,
+  // because a tie is the defect this whole path exists to remove.
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+// Compares pre-release identifier lists ascending, per semver rule 11: a
+// version WITHOUT a pre-release outranks the same version with one, fields
+// are compared left to right, and a longer list outranks its own prefix
+// (1.4.0-rc.1 < 1.4.0-rc.1.1).
+function comparePrereleaseAscending(a: string[], b: string[]): number {
+  if (a.length === 0 || b.length === 0) {
+    if (a.length === b.length) return 0;
+    return a.length === 0 ? 1 : -1;
+  }
+  const shared = Math.min(a.length, b.length);
+  for (let i = 0; i < shared; i++) {
+    const diff = compareIdentifierAscending(a[i], b[i]);
+    if (diff !== 0) return diff;
+  }
+  return a.length - b.length;
 }
 
 // Compares dot-separated version numbers component-by-component, descending
@@ -35,8 +97,7 @@ function compareVersionDescending(a: string, b: string): number {
     const diff = (vb.parts[i] ?? 0) - (va.parts[i] ?? 0);
     if (diff !== 0) return diff;
   }
-  if (va.hasSuffix !== vb.hasSuffix) return va.hasSuffix ? 1 : -1;
-  return 0;
+  return -comparePrereleaseAscending(va.prerelease, vb.prerelease);
 }
 
 // One product's entries, newest first. Both changelog pages call this rather

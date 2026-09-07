@@ -84,6 +84,66 @@ describe('entriesFor', () => {
     expect(entriesFor(tied, 'seriatim').map(e => e.data.version)).toEqual(['1.4.1', '1.4.0', '1.4.0-rc1']);
   });
 
+  // Every entry below shares one product and one date, so the ordering comes
+  // entirely from the version comparator.
+  const entry = (version: string) => ({
+    data: { product: 'seriatim' as ProductSlug, version, title: version, date: '2026-08-16' },
+  });
+
+  // Asserts the expected order from BOTH input orders. Checking one order is
+  // not enough: a rule that degrades to a TIE still produces the expected
+  // sequence whenever the input already happened to be in it, so a
+  // single-order assertion passes against a comparator missing the rule
+  // entirely. Measured -- deleting the numeric-below-alphanumeric rule left
+  // the first draft of these tests fully green.
+  const expectOrder = (expected: string[]) => {
+    const entries = expected.map(entry);
+    expect(entriesFor(entries, 'seriatim').map(e => e.data.version)).toEqual(expected);
+    expect(entriesFor([...entries].reverse(), 'seriatim').map(e => e.data.version)).toEqual(expected);
+  };
+
+  // Issue #17: the comparator used to compare only WHETHER a version carried
+  // a pre-release suffix, never its content, so two release candidates of the
+  // same version tied and fell back to input order.
+  it('orders two release candidates of the same version', () => {
+    expectOrder(['1.4.0-rc2', '1.4.0-rc1']);
+  });
+
+  // The trap #17 warned about: a lexical suffix compare fixes the tie above
+  // while putting rc10 BELOW rc2. Strict semver does exactly that, because it
+  // classes "rc10" as an alphanumeric identifier -- so this is the case that
+  // distinguishes our digit-run comparison from the spec's, and the reason
+  // for the departure. release.sh emits X.Y.Z-rcN unseparated, so rc10 is a
+  // version this project can actually ship.
+  it('compares a release candidate number numerically, not lexically', () => {
+    expectOrder(['1.4.0-rc10', '1.4.0-rc2']);
+  });
+
+  // The whole ladder at once, since the two tests above each pin one rung and
+  // a comparator can get both pairs right while being non-transitive.
+  it('sorts a full ladder of release candidates below their final release', () => {
+    expectOrder(['1.4.0', '1.4.0-rc10', '1.4.0-rc2', '1.4.0-rc1']);
+  });
+
+  // Semver's remaining pre-release rules, which the digit-run departure above
+  // does not touch: a longer identifier list outranks its own prefix, a
+  // dot-separated numeric field compares numerically, and a purely numeric
+  // identifier ranks below an alphanumeric one.
+  it('keeps semver precedence for dot-separated pre-release fields', () => {
+    expectOrder(['1.4.0-rc.1.1', '1.4.0-rc.1']);
+    expectOrder(['1.4.0-rc.10', '1.4.0-rc.2']);
+    expectOrder(['1.4.0-alpha', '1.4.0-1']);
+  });
+
+  // compareIdentifierAscending's raw-string fallback, which is the only thing
+  // stopping two identifiers that differ solely by a leading zero from tying
+  // and falling back to input order -- the exact defect #17 reported, one
+  // level down. Which of the two wins does not matter; that the answer does
+  // not depend on input order does.
+  it('breaks a tie between pre-release identifiers differing only by a leading zero', () => {
+    expectOrder(['1.4.0-rc1', '1.4.0-rc01']);
+  });
+
   // The numeric comparator must still be correct now that it also has to
   // handle suffixes: a double-digit component doesn't become a lexical
   // comparison (1.10.0 sorts above 1.9.0, not below it), and versions with a
