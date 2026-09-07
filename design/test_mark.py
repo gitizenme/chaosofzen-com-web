@@ -296,6 +296,22 @@ class ProductMarks(unittest.TestCase):
         fills = re.findall(r'fill="(#[0-9a-f]{6})"', colour)
         self.assertEqual(fills, [mark.INK_ON_DARK, mark.INK_ON_DARK, mark.TEAL])
 
+    def test_ekphrasis_icon_is_one_loop_fitted_to_the_ground(self):
+        # BUG-7: ekphrasis_icon() is the one product icon that does not use
+        # two_loops(), so it does not ride on Icon's coverage (house_icon()
+        # only) for the two invariants that matter here: one path per pass,
+        # no chunk seam showing through the alpha (test_mark.Icon.
+        # test_each_loop_is_one_path), and the stroke staying on the macOS
+        # ground rect (test_mark.Icon.test_fits_the_macos_ground_rect).
+        svg = mark.ekphrasis_icon_svg()
+        groups = re.findall(r"<g[^>]*>(.*?)</g>", svg, re.S)
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0].count("<path"), 1)   # the solid ink pass
+        self.assertEqual(groups[1].count("<path"), 3)   # the three band paths
+        x0, y0, x1, y1 = bbox(coords(svg))
+        self.assertGreaterEqual(min(x0, y0), 12.5)
+        self.assertLessEqual(max(x1, y1), 115.5)
+
 
 class InlineMarks(unittest.TestCase):
     def test_house_mark_inline_takes_current_color(self):

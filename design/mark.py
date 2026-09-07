@@ -308,6 +308,10 @@ def house_body(ink: str = INK_ON_DARK, stops=None) -> str:
 # at 16 px), no dryness, and each loop emitted as ONE path so no chunk seam
 # shows through the alpha. Fitted with the house margin; ICON_SCALE keeps the
 # stroke on the macOS ground rect (BUG-5), which test_mark.Icon checks.
+#
+# Ekphrasis's icon is the one exception to "two loops": it has a single
+# accent rather than several voices to separate, so its second loop carried
+# no colour of its own -- see single_loop() and BUG-7 below.
 # --------------------------------------------------------------------------
 ICON_SCALE = 0.78
 ICON_OFFSET = (4.0, 3.0)
@@ -324,6 +328,23 @@ def two_loops():
     colour = place(loop, (cx + ICON_OFFSET[0], cy + ICON_OFFSET[1]), ICON_SCALE, math.pi)
     ink = place(loop, (cx - ICON_OFFSET[0], cy - ICON_OFFSET[1]), ICON_SCALE, 0.0)
     return colour, ink
+
+
+def single_loop():
+    """One centred icon loop, unrotated, no offset copy.
+
+    BUG-7: two loops assumed a second colour to separate, the way Seriatim's
+    four voices do. Ekphrasis has one accent, so its "colour loop" was two
+    thirds ink anyway -- a translucent echo of the ink loop sitting a few
+    units off-centre, with no hue of its own to justify the second ring. At
+    16 px that echo is what read as a grey smear around the real ring rather
+    than as a second voice. A single loop removes the echo; icon_body() still
+    draws the ink pass and the band pass, just over the same geometry, so the
+    two ink-coloured bands land exactly on the solid ink ring beneath them
+    and only the accent band shows as a distinct pass.
+    """
+    loop = fit_one(rossler(t_end=11.0, step=6), margin=13.0)
+    return place(loop, (VIEWBOX / 2, VIEWBOX / 2), ICON_SCALE, 0.0)
 
 
 def _solid(loop, stops) -> str:
@@ -579,9 +600,14 @@ def seriatim_icon(ink: str = INK_ON_DARK) -> str:
 
 
 def ekphrasis_icon(ink: str = INK_ON_DARK) -> str:
-    """Ekphrasis's icon: the colour loop is ink with one teal band at the end."""
-    colour, inkloop = two_loops()
-    return icon_body(colour, inkloop, [ink, ink, TEAL], ink)
+    """Ekphrasis's icon: one loop, ink with one teal band at the end.
+
+    Not the shared two-loop skeleton -- see single_loop() / BUG-7. Ekphrasis
+    is the one product with a single accent and nothing to separate with a
+    second ring, so it gets one loop rather than an echo of it.
+    """
+    loop = single_loop()
+    return icon_body(loop, loop, [ink, ink, TEAL], ink)
 
 
 # --------------------------------------------------------------------------

@@ -41,7 +41,8 @@ Standard library only. No dependencies.
 | `public/favicon.svg` | The icon construction: two outer loops, colour over ink, ink as `currentColor` |
 | `public/marks/chaos-of-zen.svg` | The house mark: two orbits mirrored through the centre, spectrum over ink at 76 % |
 | `public/marks/chaos-of-zen-icon.svg` | The icon on the macOS rounded-rect ground; source of every raster icon |
-| `public/marks/ekphrasis.svg`, `ekphrasis-icon.svg` | Same skeleton; the colour orbit is ink with one teal handover |
+| `public/marks/ekphrasis.svg` | Same skeleton as the house mark; the colour orbit is ink with one teal handover |
+| `public/marks/ekphrasis-icon.svg` | One loop, not the shared two -- ink with one teal band at the end. See "Six constants", #7 |
 | `public/marks/seriatim.svg`, `seriatim-icon.svg` | Same skeleton; the colour orbit is four voices with rests, the icon four flat bands |
 | `public/marks/field.svg` | Strings at coprime positions and the mark's own dry-brush cloud, 1200×630, for the hero and the social card |
 | `design/store/*.svg` | As before: house mark, icon and Seriatim thumbnail on the opaque store ground |
@@ -165,10 +166,10 @@ All three licences permit bundling in distributed software, which matters for
 the plugin binaries later. A **wordmark is outlined** when it ships, so no font
 is embedded for it at all — the licence question applies only to live UI text.
 
-## Six constants that exist because of bugs
+## Seven constants that exist because of bugs
 
-Each was invisible to visual review and only appeared under measurement. Five
-are marked `BUG-N` in `mark.py`; the sixth is pinned by `test_mark.Icon`. Do
+Each was invisible to visual review and only appeared under measurement. Six
+are marked `BUG-N` in `mark.py`; #6 is pinned by `test_mark.Icon` instead. Do
 not "simplify" them away.
 
 1. **Normalise the logistic series by range, not amplitude.** It is strongly
@@ -196,3 +197,10 @@ not "simplify" them away.
 6. **Each icon loop is one path.** The icon's colour loop sits over the ink
    loop at partial alpha; a loop drawn as chunks shows every seam through that
    alpha. `test_mark.Icon` counts paths.
+7. **A second loop needs a second colour, or it is noise.** The shared
+   two-loop skeleton exists so a colour loop can sit over an ink loop.
+   Ekphrasis has one accent, so two thirds of its colour loop was ink anyway —
+   a translucent echo of the ink loop a few units off-centre, reading as a
+   grey smear around the ring at 16 px rather than as a second voice.
+   `ekphrasis_icon()` uses `single_loop()` instead of `two_loops()`; the
+   accent band is unchanged, only the redundant ring is gone.
