@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { PRODUCTS, PLACEHOLDER_VARIANT_ID } from './products';
-import { DOWNLOAD_URL } from './download';
 
 describe('PRODUCTS', () => {
   it('has exactly the two products the site ships', () => {
@@ -51,10 +50,11 @@ describe('PRODUCTS', () => {
 // aliases -- cannot have changed a url, a price or a checkout id under a
 // shipping product.
 //
-// They are asserted on the record itself now rather than through an alias:
-// every alias but DOWNLOAD_URL is gone, because the pages that imported them
-// read PRODUCTS.seriatim by key instead. An alias that no page imports pins a
-// value nothing uses.
+// They are asserted on the record itself rather than through an alias. Every
+// alias is now gone -- the pages that imported them read PRODUCTS.seriatim by
+// key instead -- because an alias that no page imports pins a value nothing
+// uses, and a bare name like DOWNLOAD_URL is Seriatim's only by convention,
+// which is the copy-paste that would hand an Ekphrasis buyer Seriatim's dmg.
 describe('seriatim resolves to the same values it did before the record existed', () => {
   it('download url', () => {
     expect(PRODUCTS.seriatim.downloadUrl).toBe('https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg');
@@ -71,8 +71,4 @@ describe('seriatim resolves to the same values it did before the record existed'
   // The one alias with a live consumer left (/seriatim/thanks). toBe is value
   // equality on strings, so this cannot distinguish a genuine alias from a
   // coincidentally-equal literal; what it checks is that the two agree.
-  it('DOWNLOAD_URL, which /seriatim/thanks still imports, agrees with the record', () => {
-    expect(DOWNLOAD_URL).toBe('https://dl.chaosofzen.dev/seriatim/Seriatim-latest.dmg');
-    expect(DOWNLOAD_URL).toBe(PRODUCTS.seriatim.downloadUrl);
-  });
 });

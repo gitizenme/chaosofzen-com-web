@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { DOWNLOAD_URL } from '../../lib/download';
+import { PRODUCTS } from '../../lib/products';
 ---
 <Base
   title="Thanks — Chaos of Zen"
@@ -10,7 +10,7 @@ import { DOWNLOAD_URL } from '../../lib/download';
 
   <p>
     Your download should start in a moment. If it doesn't,
-    <a href={DOWNLOAD_URL} data-testid="thanks-download">download Seriatim directly</a>.
+    <a href={PRODUCTS.seriatim.downloadUrl} data-testid="thanks-download">download Seriatim directly</a>.
   </p>
 
   <p>Your receipt will arrive by email from Lemon Squeezy.</p>
@@ -19,11 +19,15 @@ import { DOWNLOAD_URL } from '../../lib/download';
 </Base>
 
 <script>
-  import { DOWNLOAD_URL } from '../../lib/download';
+  // Read off the product record by key, like every other page. download.ts's
+  // bare DOWNLOAD_URL was Seriatim's by convention, which is fine for one
+  // product and is exactly the copy-paste that would hand an Ekphrasis buyer
+  // Seriatim's dmg.
+  import { PRODUCTS } from '../../lib/products';
 
   // Best-effort auto-start for the common case; the visible link above is
   // the real fallback for a browser that blocks this navigation.
   window.setTimeout(() => {
-    window.location.href = DOWNLOAD_URL;
+    window.location.href = PRODUCTS.seriatim.downloadUrl;
   }, 1200);
 </script>

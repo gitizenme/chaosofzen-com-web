@@ -11,8 +11,6 @@ import { PRODUCTS } from './products';
 // The url itself is a STABLE ALIAS, hardcoded. The release pipeline overwrites
 // the object behind it on every release, which is what lets a plugin release
 // ship without redeploying this site. Never substitute a versioned url here --
-// that reintroduces the coupling this avoids.
-export const DOWNLOAD_URL = PRODUCTS.seriatim.downloadUrl;
 
 export interface Manifest {
   version: string;
