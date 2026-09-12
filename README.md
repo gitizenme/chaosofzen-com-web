@@ -41,3 +41,14 @@ All commands are run from the root of the project, from a terminal:
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+
+## Shorts
+
+`/seriatim` lists every entry in `src/content/shorts/` under its hero video.
+Those entries are not written by hand: Seriatim's shorts pipeline
+(`docs/marketing/shorts/publish-web.py` in `gitizenme/seriatim`, Stage 5b of its
+social publishing runbook) uploads a kit's renders and posters to R2 at
+`https://media.chaosofzen.com/social/<asset_id>/`, writes one entry here on a
+branch `shorts/<asset_id>`, and opens a PR. Merging the PR publishes the short;
+the deploy is the ordinary one. The media never enters this repository — the
+site is fully static and this repo is not a media store.
