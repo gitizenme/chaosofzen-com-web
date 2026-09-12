@@ -1,7 +1,12 @@
 ---
+import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Button from '../../components/Button.astro';
 import Mark from '../../components/Mark.astro';
+import Shorts from '../../components/Shorts.astro';
+import { shortsFor } from '../../lib/shorts';
+
+const shorts = shortsFor(await getCollection('shorts'), 'seriatim');
 ---
 <Base
   title="Seriatim — a macOS generative instrument"
@@ -23,6 +28,8 @@ import Mark from '../../components/Mark.astro';
     <source src="/media/seriatim-demo.webm" type="video/webm" />
     <source src="/media/seriatim-demo.mp4" type="video/mp4" />
   </video>
+
+  <Shorts entries={shorts} />
 
   <h2>The number that makes the point</h2>
   <p>
