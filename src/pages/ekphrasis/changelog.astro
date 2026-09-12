@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro';
+import PluginLayout from '../../layouts/PluginLayout.astro';
 import { getCollection, render } from 'astro:content';
 import { entriesFor, changelogAnchor } from '../../lib/changelog';
 import { PRODUCTS, isPurchasable } from '../../lib/products';
@@ -20,7 +20,8 @@ const rendered = await Promise.all(entries.map(e => render(e)));
 // Ekphrasis pages use instead.
 const released = isPurchasable(PRODUCTS.ekphrasis);
 ---
-<Base
+<PluginLayout
+  product="ekphrasis"
   title="Changelog — Ekphrasis"
   description="Release history for Ekphrasis, which has not published a release yet."
 >
@@ -45,4 +46,4 @@ const released = isPurchasable(PRODUCTS.ekphrasis);
       </section>
     );
   })}
-</Base>
+</PluginLayout>
