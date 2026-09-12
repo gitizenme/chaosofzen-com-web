@@ -1,0 +1,49 @@
+---
+// The shorts an entry list carries, as a section under a product page's hero.
+// Entries arrive as a PROP rather than from getCollection here, so the
+// rendering rules are unit-testable through astro/container with no content
+// layer -- the page does the collection read and the product filter.
+//
+// Every video: preload="none", so nothing downloads until play is pressed (the
+// landscape render is ~31 MB at Stage 2's YouTube bitrate; the poster is what
+// the visitor sees until then). No autoplay, no muted -- the same policy as
+// the hero video above this section: a visitor presses play and hears it.
+import { cutsOf, type ShortData } from '../lib/shorts';
+
+interface Props { entries: { data: ShortData }[] }
+const { entries } = Astro.props;
+
+const longDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+---
+{entries.length > 0 && (
+  <section aria-labelledby="shorts" class="mt-12">
+    <h2 id="shorts">Shorts</h2>
+    <ul class="list-none p-0 m-0 flex flex-col gap-10">
+      {entries.map(({ data }) => (
+        <li class="m-0 p-0">
+          <h3 class="mt-0">{data.title}</h3>
+          <p>{data.hook}</p>
+          <div class="flex flex-wrap items-start gap-4">
+            {cutsOf(data.media).map(({ kind, cut }) => (
+              <video
+                controls
+                playsinline
+                preload="none"
+                poster={cut.poster}
+                width={cut.width}
+                height={cut.height}
+                class={kind === 'landscape'
+                  ? 'w-full rounded-brand bg-canvas-raised'
+                  : 'h-auto max-h-[70vh] w-auto rounded-brand bg-canvas-raised'}
+              >
+                <source src={cut.url} type="video/mp4" />
+              </video>
+            ))}
+          </div>
+          <p class="text-ink-muted text-sm"><time datetime={data.date}>{longDate(data.date)}</time> · {data.episode}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
