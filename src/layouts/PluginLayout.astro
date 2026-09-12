@@ -1,0 +1,18 @@
+---
+import Base from './Base.astro';
+import PluginNav from '../components/PluginNav.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+  product: 'seriatim' | 'ekphrasis';
+}
+const { title, description, ogImage, product } = Astro.props;
+---
+<Base title={title} description={description} ogImage={ogImage} wide>
+  <div class="lg:flex lg:gap-12 lg:items-start">
+    <div class="max-w-3xl"><slot /></div>
+    <PluginNav product={product} />
+  </div>
+</Base>

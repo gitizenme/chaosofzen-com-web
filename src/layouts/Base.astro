@@ -4,8 +4,8 @@ import { Font } from 'astro:assets';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 
-interface Props { title: string; description: string; ogImage?: string; }
-const { title, description, ogImage = '/og/default.png' } = Astro.props;
+interface Props { title: string; description: string; ogImage?: string; wide?: boolean; }
+const { title, description, ogImage = '/og/default.png', wide = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://chaosofzen.com');
 ---
 <html lang="en">
@@ -39,7 +39,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://chaosofzen.
   <body class="bg-canvas text-ink antialiased">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:p-4">Skip to content</a>
     <Nav />
-    <main id="main" class="mx-auto w-full max-w-3xl px-6 pb-16 pt-10 md:pt-14"><slot /></main>
+    <main id="main" class={`mx-auto w-full ${wide ? 'max-w-5xl' : 'max-w-3xl'} px-6 pb-16 pt-10 md:pt-14`}><slot /></main>
     <Footer />
   </body>
 </html>
