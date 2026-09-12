@@ -1,0 +1,167 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  title="User Guide — Ekphrasis"
+  description="How to use Ekphrasis: the ink curve, reading paths, frequency axis, quality, voices, and spectral transcription."
+>
+  <h1>User Guide</h1>
+  <p>
+    Ekphrasis reads an image as a spectrogram and resynthesizes it into
+    sound in real time. A reading head sweeps the picture in musical time;
+    each row of pixels is a frequency band, each column a moment, and how
+    bright a pixel is decides how loudly that band sounds. The result runs
+    through Griffin-Lim phase reconstruction, which is what makes the
+    output recognizably follow the picture rather than merely being
+    triggered by it.
+  </p>
+  <p>
+    This guide covers what the plugin does once it's loaded and an image is
+    on the display. For installing, finding it in your host, and
+    uninstalling, see the <a href="/ekphrasis/manual">Manual</a>.
+  </p>
+
+  <h2 id="quick-start">Quick start</h2>
+  <img src="/media/ekphrasis-guide-ui.png" alt="The Ekphrasis editor with an image loaded, the reading path and playhead drawn over it" />
+  <p>
+    Load an image by dropping it on the display, or with the
+    <strong>Load Image…</strong> button. <strong>Hold a note — or tick
+    Hold.</strong> With no note held, Ekphrasis is silent even while the
+    transport runs; Hold latches a note at the Transpose Root with no
+    controller, no armed track, and no MIDI routing at all — the fastest
+    way to audition a picture.
+  </p>
+  <p>Two things commonly explain silence, and neither is a fault:</p>
+  <ul>
+    <li>JUCE's standalone opens <strong>no MIDI input on macOS</strong> until you enable one in Options → Audio/MIDI Settings.</li>
+    <li>An <strong>unarmed track</strong> in your host passes no notes to the plugin.</li>
+  </ul>
+  <p>
+    The status row at the bottom of the editor always says which of these
+    applies — <em>"Silent: no image"</em>, <em>"Silent: no note held (or
+    Hold)"</em>, or <em>"Sounding: C3"</em>.
+  </p>
+
+  <h2 id="display-ink-curve">The display &amp; ink curve</h2>
+  <img src="/media/ekphrasis-guide-ink-curve.png" alt="The ink controls with Threshold raised, showing the image visibly darkened" />
+  <p>
+    What you see on the display is the <strong>inked</strong> image — the
+    ink curve applied, exactly what the engine reads. Three controls shape
+    it: <strong>Invert</strong> flips which end of the brightness range
+    counts as loud, <strong>Threshold</strong> darkens the picture and
+    silences quiet bands together, and <strong>Contrast</strong> steepens
+    or flattens the mapping from brightness to level. Watching the display,
+    not the source file, is the fastest way to understand what a given
+    image will sound like.
+  </p>
+
+  <h2 id="reading-paths-pacing">Reading paths &amp; pacing</h2>
+  <img src="/media/ekphrasis-guide-reading-paths.svg" alt="Four reading paths swept over the same image, with the row/column/brightness mapping" />
+  <p>
+    The <strong>Path</strong> parameter chooses how the reading head sweeps
+    the image: horizontal, vertical, radial, or spiral. <strong>Pacing</strong>
+    shapes how the head moves through that path over time: even,
+    accelerando, rallentando, or breathing.
+  </p>
+  <p>
+    <strong>Scan Time</strong> sets how long one full traversal takes, and
+    its unit depends on <strong>Host Sync</strong>: bars when synced to
+    your host's transport, seconds when free-running. The panel shows both
+    the unit and the resolved length in seconds.
+  </p>
+
+  <h2 id="frequency-axis">Frequency axis</h2>
+  <img src="/media/ekphrasis-guide-frequency-axis.png" alt="The frequency panel with Log axis, a narrowed Min/Max range, and a musical scale engaged" />
+  <p>
+    <strong>Min Hz</strong> and <strong>Max Hz</strong> set the frequency
+    range the image is read across. <strong>Axis</strong> chooses
+    logarithmic or linear mapping from image row to frequency — logarithmic
+    (the default) matches how pitch is perceived. <strong>Scale</strong>
+    and <strong>Scale Root</strong> optionally quantize the frequency axis
+    to a musical scale, so every row lands on a scale tone instead of a
+    continuous frequency.
+  </p>
+
+  <h2 id="spectral-quality">Spectral quality</h2>
+  <p>
+    <strong>Quality</strong> sets how many Griffin-Lim iterations
+    reconstruct each block: Draft (8), Normal (32), or High (96). More
+    iterations mean a closer resemblance to the image and more CPU work per
+    block. <strong>Tonal ↔ Airy</strong> shapes the spectral character
+    independent of iteration count. High quality halves the available
+    polyphony: eight voices at Draft or Normal, but only two at High.
+  </p>
+
+  <h2 id="voice-polyphony">Voice &amp; polyphony</h2>
+  <img src="/media/ekphrasis-guide-voice-quality-panel.png" alt="The voice and quality control panel with Transpose Root shifted and Quality set to High" />
+  <p>
+    <strong>Transpose Root</strong> sets which note sounds the image
+    untransposed. <strong>Attack</strong> and <strong>Release</strong>
+    shape each note's envelope; both apply immediately. Ekphrasis is
+    polyphonic: up to eight held notes (two at High quality) each transpose
+    the spectrum independently, and an MPE controller gives each note its
+    own pitch bend and pressure. A ninth note steals the oldest.
+    <strong>A cold transposition costs one block</strong> — a note at a
+    transposition not yet rendered waits for the renderer before it sounds.
+  </p>
+
+  <h2 id="transcription">Transcription</h2>
+  <img src="/media/ekphrasis-guide-transcription-on.png" alt="The transcription controls active, with Transcribe Voices and Transcribe Thresh both off their defaults" />
+  <p>
+    Turn <strong>Transcribe</strong> on to send the picture out as MIDI
+    notes. The engine tracks the loudest partials in the spectrum it is
+    already rendering and emits each one as an MPE note.
+    <strong>Transcribe Voices</strong> sets how many partials may sound as
+    notes at once; <strong>Transcribe Thresh</strong> sets how loud a
+    partial has to be before it becomes a note. It's off by default, emits
+    whenever the transport runs, and always reads the untransposed image.
+  </p>
+  <p>
+    To receive the notes in Live, set a second track's <strong>MIDI
+    From</strong> to the Ekphrasis track — the <strong>VST3</strong> is the
+    only format Live offers as a routing source. Two settings are required
+    and neither is the default: the chooser under <em>MIDI From</em> must
+    read <code>Ekphrasis</code>, not <code>Post FX</code>, and
+    <strong>MPE must be enabled on the Ekphrasis device</strong> itself, or
+    Live folds every note onto one channel and discards the per-note
+    bends. See the <a href="/ekphrasis/manual">Manual</a> for install and
+    general routing setup.
+  </p>
+
+  <h2 id="midi-thru-panic">MIDI Thru &amp; Panic</h2>
+  <p>
+    <strong>MIDI Thru</strong> passes incoming MIDI back out, and like
+    transcription's output, it's only routable from the VST3 in Live.
+    <strong>Panic</strong> releases every sounding voice and closes every
+    MPE note the plugin has emitted — the way out if a note-off is ever
+    lost in transit and a note is left stuck on.
+  </p>
+
+  <h2 id="parameters">Parameters reference</h2>
+  <table>
+    <tr><th>Group</th><th>Parameters</th></tr>
+    <tr><td>Ink</td><td>Invert, Threshold, Contrast</td></tr>
+    <tr><td>Reading</td><td>Path, Pacing, Scan Time (bars when synced, seconds when free)</td></tr>
+    <tr><td>Frequency</td><td>Min Hz, Max Hz, Axis (log/linear), Scale, Scale Root</td></tr>
+    <tr><td>Spectral</td><td>Quality (Draft / Normal / High), Tonal ↔ Airy</td></tr>
+    <tr><td>Voice</td><td>Transpose Root, Attack, Release</td></tr>
+    <tr><td>Output</td><td>Spectral Gain, Master</td></tr>
+    <tr><td>Sync</td><td>Host Sync, Hold</td></tr>
+    <tr><td>MIDI</td><td>Bend Range, MIDI Thru</td></tr>
+    <tr><td>Transcription</td><td>Transcribe, Transcribe Voices, Transcribe Threshold</td></tr>
+  </table>
+  <p>
+    These are the names your host shows. <em>Transcribe Threshold</em> is
+    labelled <strong>Transcribe Thresh</strong> in the editor panel, because
+    the full name would be truncated at the editor's minimum width.
+  </p>
+
+  <h2 id="about-panel">About panel &amp; credits</h2>
+  <img src="/media/ekphrasis-guide-about-panel.png" alt="The About panel showing the version and build identifier" />
+  <p>
+    The About panel shows the installed version and build identifier — the
+    same number your host reports.
+  </p>
+
+  <p><a href="/ekphrasis/manual">Manual</a> · <a href="/ekphrasis/changelog">Changelog</a> · <a href="/ekphrasis/download">Download</a></p>
+</Base>
