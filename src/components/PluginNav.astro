@@ -6,12 +6,22 @@ interface Props { product: 'seriatim' | 'ekphrasis'; }
 const { product } = Astro.props;
 
 const base = `/${product}`;
-const items = [
-  { href: base, label: 'Overview' },
-  { href: `${base}/download`, label: 'Download' },
-  { href: `${base}/manual`, label: 'Install Guide' },
-  { href: `${base}/changelog`, label: 'Changelog' },
-];
+const navItems: Record<'seriatim' | 'ekphrasis', { href: string; label: string }[]> = {
+  seriatim: [
+    { href: base, label: 'Overview' },
+    { href: `${base}/download`, label: 'Download' },
+    { href: `${base}/manual`, label: 'Install Guide' },
+    { href: `${base}/changelog`, label: 'Changelog' },
+  ],
+  ekphrasis: [
+    { href: base, label: 'Overview' },
+    { href: `${base}/download`, label: 'Download' },
+    { href: `${base}/manual`, label: 'Install Guide' },
+    { href: `${base}/guide`, label: 'User Guide' },
+    { href: `${base}/changelog`, label: 'Changelog' },
+  ],
+};
+const items = navItems[product];
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 ---
