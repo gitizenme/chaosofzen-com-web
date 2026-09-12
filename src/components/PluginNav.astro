@@ -1,0 +1,35 @@
+---
+// Cross-page quick nav for a plugin's own section (overview, download, manual,
+// changelog). Desktop-only -- below `lg` there's no room beside the content
+// column, so the existing inline text links on each page remain the fallback.
+interface Props { product: 'seriatim' | 'ekphrasis'; }
+const { product } = Astro.props;
+
+const base = `/${product}`;
+const items = [
+  { href: base, label: 'Overview' },
+  { href: `${base}/download`, label: 'Download' },
+  { href: `${base}/manual`, label: 'Install Guide' },
+  { href: `${base}/changelog`, label: 'Changelog' },
+];
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+<nav aria-label="Plugin sections" class="hidden lg:block sticky top-14 shrink-0 w-40">
+  <ul class="flex flex-col gap-1 text-sm list-none pl-0">
+    {items.map((item) => {
+      const current = path === item.href;
+      return (
+        <li>
+          <a
+            href={item.href}
+            aria-current={current ? 'page' : undefined}
+            class={`block border-l-2 py-1 pl-3 ${current ? 'border-accent text-ink font-semibold' : 'border-hairline text-ink-muted hover:border-ink-muted hover:text-ink'}`}
+          >
+            {item.label}
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+</nav>

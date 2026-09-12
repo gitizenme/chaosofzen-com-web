@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import Base from '../../layouts/Base.astro';
+import PluginLayout from '../../layouts/PluginLayout.astro';
 import Button from '../../components/Button.astro';
 import Mark from '../../components/Mark.astro';
 import Shorts from '../../components/Shorts.astro';
@@ -8,7 +8,8 @@ import { shortsFor } from '../../lib/shorts';
 
 const shorts = shortsFor(await getCollection('shorts'), 'seriatim');
 ---
-<Base
+<PluginLayout
+  product="seriatim"
   title="Seriatim — a macOS generative instrument"
   description="Seriatim is a macOS VST3/AU generative instrument that composes four-voice music that never repeats, for roughly 931 million events per voice."
   ogImage="/media/seriatim-demo-poster.jpg"
@@ -52,4 +53,4 @@ const shorts = shortsFor(await getCollection('shorts'), 'seriatim');
   <p>macOS 11.0 or later. Apple silicon or Intel.</p>
 
   <p><Button href="/seriatim/download">Download Seriatim</Button></p>
-</Base>
+</PluginLayout>

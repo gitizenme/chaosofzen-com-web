@@ -1,7 +1,8 @@
 ---
-import Base from '../../layouts/Base.astro';
+import PluginLayout from '../../layouts/PluginLayout.astro';
 ---
-<Base
+<PluginLayout
+  product="seriatim"
   title="User Guide — Seriatim"
   description="How to use Seriatim: the score view, per-voice controls, seeds, host sync, MIDI output and the MIDI FX variant."
 >
@@ -152,4 +153,4 @@ import Base from '../../layouts/Base.astro';
   <img src="/media/guide/about-panel.png" alt="The About panel: version, build identifier, and credits." class="w-full max-w-sm rounded-brand bg-canvas-raised" />
 
   <p><a href="/seriatim/manual">Manual</a> · <a href="/seriatim/changelog">Changelog</a> · <a href="/seriatim/download">Download</a></p>
-</Base>
+</PluginLayout>

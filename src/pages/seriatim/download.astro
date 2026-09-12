@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro';
+import PluginLayout from '../../layouts/PluginLayout.astro';
 import VersionBadge from '../../components/VersionBadge.astro';
 import Button from '../../components/Button.astro';
 import { PRODUCTS, isPurchasable } from '../../lib/products';
@@ -16,7 +16,8 @@ import { PRODUCTS, isPurchasable } from '../../lib/products';
 const purchasable = isPurchasable(PRODUCTS.seriatim);
 const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
 ---
-<Base
+<PluginLayout
+  product="seriatim"
   title="Download Seriatim — Chaos of Zen"
   description="Seriatim is a macOS VST3/AU generative instrument. Pay what you want, including nothing."
 >
@@ -51,8 +52,8 @@ const suggested = (PRODUCTS.seriatim.suggestedPriceCents / 100).toFixed(0);
 
   <VersionBadge manifestUrl={PRODUCTS.seriatim.manifestUrl} />
 
-  <p><a href="/seriatim/manual">Installation guide</a> · <a href="/seriatim/guide">User guide</a> · <a href="/eula">Licence</a></p>
-</Base>
+  <p><a href="/seriatim/manual">Installation guide</a> · <a href="/seriatim/guide">User guide</a> · <a href="/eula">License</a></p>
+</PluginLayout>
 
 <script>
   import { parsePrice } from '../../lib/price';

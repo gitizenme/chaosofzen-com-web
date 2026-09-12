@@ -45,9 +45,10 @@ Feel free to check [our documentation](https://docs.astro.build) or jump into ou
 ## Shorts
 
 `/seriatim` lists every entry in `src/content/shorts/` under its hero video.
-Those entries are not written by hand: Seriatim's shorts pipeline
-(`docs/marketing/shorts/publish-web.py` in `gitizenme/seriatim`, Stage 5b of its
-social publishing runbook) uploads a kit's renders and posters to R2 at
+Those entries are not written by hand: the shared shorts pipeline
+(`python3 -m media_shorts_toolkit.web publish` in `cssllcio/media-shorts-toolkit`,
+Stage 5b of each product's social publishing runbook; the frontmatter is the
+toolkit README's "site contract") uploads a kit's renders and posters to R2 at
 `https://media.chaosofzen.com/social/<asset_id>/`, writes one entry here on a
 branch `shorts/<asset_id>`, and opens a PR. Merging the PR publishes the short;
 the deploy is the ordinary one. The media never enters this repository — the

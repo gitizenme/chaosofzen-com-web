@@ -22,8 +22,9 @@ const cut = z.object({
   height: z.number().int().positive(),
 });
 
-// One file per post kit, written by Seriatim's docs/marketing/shorts/publish-web.py
-// (its runbook's Stage 5b) on a branch of this repo; the PR it opens is the
+// One file per post kit, written by media-shorts-toolkit's `web publish` (a
+// product's runbook Stage 5b; this schema is the toolkit README's "site
+// contract") on a branch of this repo; the PR it opens is the
 // publish gate. Media stays on R2 -- this site is fully static and the repo is
 // not a media store.
 const shorts = defineCollection({
