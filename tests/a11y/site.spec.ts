@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const PAGES = ['/', '/seriatim', '/seriatim/download', '/seriatim/thanks',
-                '/seriatim/manual', '/seriatim/changelog',
+                '/seriatim/manual', '/seriatim/guide', '/seriatim/changelog',
                 '/ekphrasis', '/ekphrasis/download', '/ekphrasis/thanks',
                 '/ekphrasis/manual', '/ekphrasis/changelog',
                 '/eula', '/privacy'];
