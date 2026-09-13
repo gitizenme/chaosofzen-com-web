@@ -1,0 +1,57 @@
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="900" height="480" fill="#ffffff"/>
+  <text x="450" y="30" text-anchor="middle" font-size="20" font-weight="600" fill="#1a1a1a">Four reading paths over the same image</text>
+
+  <!-- Horizontal -->
+  <g transform="translate(20,60)">
+    <rect x="0" y="0" width="190" height="150" fill="#e8e8e8" stroke="#999"/>
+    <path d="M 10 20 H 180 M 10 50 H 180 M 10 80 H 180 M 10 110 H 180 M 10 140 H 180" stroke="#3a6ea5" stroke-width="2" fill="none"/>
+    <circle cx="180" cy="140" r="5" fill="#c0392b"/>
+    <text x="95" y="172" text-anchor="middle" font-size="15" fill="#1a1a1a">Horizontal</text>
+    <text x="95" y="190" text-anchor="middle" font-size="12" fill="#555">rows sweep left to right</text>
+  </g>
+
+  <!-- Vertical -->
+  <g transform="translate(240,60)">
+    <rect x="0" y="0" width="190" height="150" fill="#e8e8e8" stroke="#999"/>
+    <path d="M 20 10 V 140 M 55 10 V 140 M 90 10 V 140 M 125 10 V 140 M 160 10 V 140" stroke="#3a6ea5" stroke-width="2" fill="none"/>
+    <circle cx="160" cy="140" r="5" fill="#c0392b"/>
+    <text x="95" y="172" text-anchor="middle" font-size="15" fill="#1a1a1a">Vertical</text>
+    <text x="95" y="190" text-anchor="middle" font-size="12" fill="#555">columns sweep top to bottom</text>
+  </g>
+
+  <!-- Radial -->
+  <g transform="translate(460,60)">
+    <rect x="0" y="0" width="190" height="150" fill="#e8e8e8" stroke="#999"/>
+    <circle cx="95" cy="75" r="10" fill="none" stroke="#3a6ea5" stroke-width="2"/>
+    <circle cx="95" cy="75" r="30" fill="none" stroke="#3a6ea5" stroke-width="2"/>
+    <circle cx="95" cy="75" r="50" fill="none" stroke="#3a6ea5" stroke-width="2"/>
+    <circle cx="95" cy="75" r="68" fill="none" stroke="#3a6ea5" stroke-width="2"/>
+    <circle cx="163" cy="75" r="5" fill="#c0392b"/>
+    <text x="95" y="172" text-anchor="middle" font-size="15" fill="#1a1a1a">Radial</text>
+    <text x="95" y="190" text-anchor="middle" font-size="12" fill="#555">rings sweep outward from center</text>
+  </g>
+
+  <!-- Spiral -->
+  <g transform="translate(680,60)">
+    <rect x="0" y="0" width="190" height="150" fill="#e8e8e8" stroke="#999"/>
+    <path d="M 95 75 m 0,0 c 20,0 20,20 0,20 c -30,0 -30,-30 0,-30 c 40,0 40,40 0,40 c -50,0 -50,-50 0,-50"
+          stroke="#3a6ea5" stroke-width="2" fill="none"/>
+    <circle cx="95" cy="25" r="5" fill="#c0392b"/>
+    <text x="95" y="172" text-anchor="middle" font-size="15" fill="#1a1a1a">Spiral</text>
+    <text x="95" y="190" text-anchor="middle" font-size="12" fill="#555">one continuous outward coil</text>
+  </g>
+
+  <text x="450" y="285" text-anchor="middle" font-size="14" fill="#555">Red dot marks the reading head; every path can also be paced</text>
+  <text x="450" y="305" text-anchor="middle" font-size="14" fill="#555">even, accelerando, rallentando, or breathing.</text>
+
+  <!-- Mapping legend -->
+  <g transform="translate(140,325)">
+    <rect x="0" y="0" width="620" height="140" fill="#f7f7f7" stroke="#ccc"/>
+    <text x="20" y="28" font-size="16" font-weight="600" fill="#1a1a1a">What the reading head reads</text>
+    <text x="20" y="58" font-size="14" fill="#1a1a1a">Vertical position (row)  →  frequency band</text>
+    <text x="20" y="83" font-size="14" fill="#1a1a1a">Position along the path (column, for Horizontal)  →  moment in musical time</text>
+    <text x="20" y="108" font-size="14" fill="#1a1a1a">Pixel brightness  →  how loudly that band sounds</text>
+    <text x="20" y="130" font-size="12" fill="#777">Log axis (default): the top of the image is the high end.</text>
+  </g>
+</svg>
