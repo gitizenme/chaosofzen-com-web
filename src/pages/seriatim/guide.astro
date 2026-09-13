@@ -132,11 +132,13 @@ import PluginLayout from '../../layouts/PluginLayout.astro';
     Seriatim also ships as an AU MIDI effect — <strong>Seriatim MIDI
     FX</strong> — for Logic Pro's MIDI FX slot on a software-instrument
     track, generating the same four-voice quartet as MIDI without an audio
-    output of its own. Its control panel is the same Score/Tuning/Randomize
-    layout as the instrument, minus the Output group's Master, Wave and
-    Level controls (there's no built-in synth to drive) — only the
-    per-voice <strong>Mute / Solo</strong> row toggles remain from that
-    group. <strong>MIDI Thru</strong> — a checkbox present in both variants
+    output of its own. Its control panel is the same
+    Transport/Score/Tuning/Randomize layout as the instrument, but with no
+    built-in synth to drive it drops the Output group's
+    <strong>Master</strong> and each voice strip's <strong>Wave</strong>,
+    <strong>Level</strong> and <strong>Synth Mute</strong> — each voice keeps
+    only its <strong>Mute</strong>, <strong>Solo</strong> and
+    <strong>Reseed</strong> (M S R) toggles. <strong>MIDI Thru</strong> — a checkbox present in both variants
     — passes incoming MIDI through unchanged; it defaults on here, since
     that's the entire point of a MIDI FX slot, letting the effect sit ahead
     of a live-played MIDI FX chain without silencing it.
