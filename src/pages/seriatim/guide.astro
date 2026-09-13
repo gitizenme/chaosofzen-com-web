@@ -1,0 +1,156 @@
+---
+import PluginLayout from '../../layouts/PluginLayout.astro';
+---
+<PluginLayout
+  product="seriatim"
+  title="User Guide — Seriatim"
+  description="How to use Seriatim: the score view, per-voice controls, seeds, host sync, MIDI output and the MIDI FX variant."
+>
+  <h1>User Guide</h1>
+  <p>
+    Seriatim is a four-voice generative instrument built on integral
+    serialism: seven series per voice control pitch, register, duration,
+    dynamics, envelope, pan, and ornamentation, with per-series lengths (5,
+    7, 11, 13, 17, 19) chosen to be pairwise coprime and coprime to the
+    pitch row's own 576-step period. The combined state of the quartet
+    doesn't repeat for roughly 931 million events per voice.
+  </p>
+  <p>
+    This guide covers what's in the window once Seriatim is loaded. For
+    installing, uninstalling, and routing four instances in Live, see the
+    <a href="/seriatim/manual">Manual</a>.
+  </p>
+
+  <h2 id="quick-start">Quick start</h2>
+  <ol>
+    <li>Add Seriatim to an instrument track in your host — Ableton Live, Logic Pro, Reaper, or Bitwig.</li>
+    <li>Press the transport button (▶) in the Transport group, or start your host's transport with Sync enabled.</li>
+    <li>The score begins scrolling left to right as the quartet generates. Seriatim's built-in synth plays immediately; nothing else needs to be configured to hear it.</li>
+  </ol>
+  <img src="/media/guide/main-window.png" alt="The Seriatim editor: the scrolling score above, transport, tuning, randomize and output controls below." class="w-full rounded-brand bg-canvas-raised" />
+
+  <h2 id="the-score-view">Score view</h2>
+  <p>
+    The score is a live, scrolling graphic of what's playing: each voice's
+    upcoming events, revealed as the playhead approaches them, in an
+    auto-following time span sized to whichever voice is running slowest
+    (see <strong>Span Auto</strong> below).
+  </p>
+  <ul>
+    <li><strong>Play / Stop</strong> — the transport button in the Transport group starts and stops generation. Stopping holds the score still; nothing is cleared.</li>
+    <li><strong>Clear</strong> — empties the recorded score (and what a MIDI drag-export would write). It does not change what plays next — only what's been recorded so far.</li>
+    <li><strong>Reseed</strong> — draws a new random seed for the master generator and all four voices, changing the specific sequence of pitches, durations and everything else the rows produce, without changing any knob setting. The new seed is saved with your project, so a piece you like will play back identically when you reopen it.</li>
+    <li><strong>Freeze + click-to-retrigger</strong> — stopping the transport freezes the score in place; clicking a frozen event retriggers it, a quick way to audition a passage without restarting the whole quartet.</li>
+  </ul>
+
+  <h2 id="transport-and-sync">Transport &amp; host sync</h2>
+  <p>
+    <strong>Sync</strong> (in the Transport group) switches between
+    free-running generation — Seriatim's own clock, independent of the host
+    — and host-synced generation, where <strong>Sync Unit</strong>
+    quantizes event timing to the host's tempo (from <code>1/32</code> up
+    to <code>64 bars</code>).
+  </p>
+  <p>
+    With Sync off, pressing Seriatim's own transport starts and stops it
+    regardless of what the host transport is doing. With Sync on, the host
+    transport drives it: press play in your DAW. Determinism holds in both
+    modes — playing from the same point with the same seed reproduces the
+    same events.
+  </p>
+
+  <h2 id="the-row-system">Row system</h2>
+  <p>
+    Each voice's pitch comes from one of 48 forms of a 12-tone row,
+    advancing to the next form every 12 steps — a 576-step period for pitch
+    alone. Register, duration, dynamics, envelope, pan and ornamentation
+    each run on their own series, five to nineteen steps long, chosen so no
+    two series share a common factor. Because none of the seven periods
+    divides another, the quartet's <em>combined</em> state — all seven
+    series, in all four voices, together — doesn't return to where it
+    started for the least common multiple of all of them: roughly 931
+    million events per voice. That's the mechanism behind "doesn't repeat"
+    — not a random-number generator avoiding repeats, but a set of periods
+    too large to complete within any single listening session.
+  </p>
+  <img src="/media/guide/row-system.svg" alt="Diagram: four voices, each driven by seven series of pairwise-coprime length, combining to a period of roughly 931 million events." class="w-full rounded-brand bg-canvas-raised" />
+
+  <h2 id="per-voice-controls">Per-voice controls</h2>
+  <p>Each of the four voices has its own strip:</p>
+  <ul>
+    <li><strong>Wave</strong> — the voice's built-in oscillator shape: Sine, Triangle, Saw, or Square.</li>
+    <li><strong>Rate</strong> — a multiplier on the voice's own event spacing, from half to five times its base speed.</li>
+    <li><strong>Reg Min / Reg Max</strong> and <strong>Unit Min / Unit Max</strong> — the register and per-event timing range the voice drifts between, letting a voice range from a 20&nbsp;ms flurry to an hour-long drone.</li>
+    <li><strong>Mute / Solo / Synth Mute</strong> — Mute stops the voice's row from advancing at all; Synth Mute silences only the built-in synth for that voice, leaving its MIDI output running (useful when driving an external instrument instead); Solo suppresses every other voice's event emission — this is also how you split four voices across four separate plugin instances for four external instruments (see the Manual's <a href="/seriatim/manual#driving-four-instruments">driving four instruments in Live</a>).</li>
+    <li><strong>Scale / Root</strong> — reinterprets a voice's row order (not its underlying pitch content) as an index into a scale, letting you constrain otherwise-chromatic output to a key. "Follow Global" defers to the Tuning group's own Scale/Root.</li>
+    <li><strong>Jitter</strong> — per-event timing jitter as a percentage of each voice's own current spacing; applies globally across all four voices.</li>
+  </ul>
+  <img src="/media/guide/control-panel-detail.png" alt="A close view of the Transport, Score, Tuning, Randomize and Output control groups." class="w-full rounded-brand bg-canvas-raised" />
+
+  <h2 id="randomize">Randomize</h2>
+  <p>The Randomize group re-rolls control settings — not the row's pitch content the way Reseed does, but the knobs themselves:</p>
+  <ul>
+    <li><strong>Amount</strong> sets how far each randomized parameter is allowed to move.</li>
+    <li><strong>Locks</strong> (Wave, Rate, Unit Range, Register, Jitter) exclude specific parameters from a Randomize pass, letting you re-roll everything except, say, the wave shapes you've already dialed in.</li>
+    <li><strong>Undo</strong> reverts the last Randomize press in one step.</li>
+  </ul>
+
+  <h2 id="span-export-output">Span, Export, and Output</h2>
+  <ul>
+    <li><strong>Span</strong> sets how much of the timeline the score window shows at once; <strong>Span Auto</strong> follows whichever voice is running slowest automatically, so the score is never empty even when one voice is set to a hugely long event spacing.</li>
+    <li><strong>Export Length</strong> governs how much recent material a MIDI drag-export captures — see MIDI drag-export, below.</li>
+    <li><strong>Master</strong> is the overall output level of the built-in synth, in the Output group.</li>
+  </ul>
+
+  <h2 id="midi-output">MIDI output</h2>
+  <p>Seriatim outputs MIDI live as it generates, in either mode (<strong>MIDI Out</strong>, the combo box in the editor's header bar):</p>
+  <ul>
+    <li><strong>Channel per voice</strong> — each of the four voices' notes go out on MIDI channels 1–4, one voice per channel, so an external four-part instrument (or four separate instrument tracks) can receive the quartet split apart.</li>
+    <li><strong>MPE</strong> — the same four voices, expressed as per-note pitch bend on an MPE-aware instrument, so a glissando plays as a slide rather than a run of discrete notes.</li>
+  </ul>
+  <p>
+    Routing four channels to four separate instrument tracks is
+    host-specific — Live in particular has no built-in per-channel MIDI
+    filter, which the Manual's
+    <a href="/seriatim/manual#driving-four-instruments">driving four instruments in Live</a>
+    section covers with Seriatim's own Solo toggles as the workaround.
+  </p>
+
+  <h2 id="midi-drag-export">MIDI drag-export</h2>
+  <p>
+    Drag the "⇢ MIDI" chip in the editor's header out onto a track to
+    export what's already played as a 4-track MIDI file — one track per
+    voice, channels matching <strong>MIDI Out</strong>'s mode — covering the
+    <strong>Export Length</strong> most recently generated. This is a
+    snapshot of what already happened, not a render of what hasn't played
+    yet. The <strong>Save</strong> button next to the chip does the same
+    thing without a drag, for hosts that don't accept a drop.
+  </p>
+
+  <h2 id="seriatim-midi-fx">Seriatim MIDI FX</h2>
+  <p>
+    Seriatim also ships as an AU MIDI effect — <strong>Seriatim MIDI
+    FX</strong> — for Logic Pro's MIDI FX slot on a software-instrument
+    track, generating the same four-voice quartet as MIDI without an audio
+    output of its own. Its control panel is the same Score/Tuning/Randomize
+    layout as the instrument, minus the Output group's Master, Wave and
+    Level controls (there's no built-in synth to drive) — only the
+    per-voice <strong>Mute / Solo</strong> row toggles remain from that
+    group. <strong>MIDI Thru</strong> — a checkbox present in both variants
+    — passes incoming MIDI through unchanged; it defaults on here, since
+    that's the entire point of a MIDI FX slot, letting the effect sit ahead
+    of a live-played MIDI FX chain without silencing it.
+  </p>
+
+  <h2 id="about-panel">About panel</h2>
+  <p>
+    Click the "Seriatim" credit in the footer to open the About panel:
+    product name and version, the build's short git commit and build type
+    (for example, <code>1.5.1 (2626ce9·Release)</code> — useful when
+    reporting an issue), and the Chaos of Zen credit. Click anywhere in the
+    panel to close it.
+  </p>
+  <img src="/media/guide/about-panel.png" alt="The About panel: version, build identifier, and credits." class="w-full max-w-sm rounded-brand bg-canvas-raised" />
+
+  <p><a href="/seriatim/manual">Manual</a> · <a href="/seriatim/changelog">Changelog</a> · <a href="/seriatim/download">Download</a></p>
+</PluginLayout>
